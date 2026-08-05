@@ -1,10 +1,11 @@
 {
   "name": "pi-tooltime",
-  "version": "0.1.0",
+  "version": "1.0.0-rc.1",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.2",
   "description": "Pi tool-time analytics and prompt coaching.",
+  "author": "Lachlan Jacobs <lachlan.jacobs@protonmail.com>",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
@@ -55,13 +56,15 @@
     "core:contract": "node scripts/verify-core-api.mjs",
     "lint:package": "publint --strict && attw --pack . --profile esm-only --entrypoints . ./extension --quiet",
     "pack:check": "npm pack --dry-run --ignore-scripts",
-    "verify": "pnpm check && pnpm test && pnpm build && pnpm core:contract && pnpm lint:package && pnpm pack:check"
+    "release:metadata": "node scripts/verify-release-metadata.mjs",
+    "release:ready": "node scripts/verify-release-metadata.mjs --require-license && pnpm verify",
+    "verify": "pnpm check && pnpm release:metadata && pnpm test && pnpm build && pnpm core:contract && pnpm lint:package && pnpm pack:check"
   },
   "engines": {
     "node": ">=22.19.0"
   },
   "peerDependencies": {
-    "@earendil-works/pi-coding-agent": "*"
+    "@earendil-works/pi-coding-agent": ">=0.83.0"
   },
   "peerDependenciesMeta": {
     "@earendil-works/pi-coding-agent": {

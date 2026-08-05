@@ -23,7 +23,7 @@ This procedure does not select or state a project license.
 Set a shell variable for the release tag:
 
 ```bash
-export TAG=v0.1.0
+export TAG=v1.0.0-rc.1
 ```
 
 Make sure these values agree:
@@ -32,6 +32,14 @@ Make sure these values agree:
 - The matching `CHANGELOG.md` heading and date.
 - Version strings in generated output and request headers.
 - README installation examples for the release.
+
+Rebuild generated output, then check these references together:
+
+```bash
+pnpm build
+pnpm release:metadata
+test "v$(node -p 'require("./package.json").version')" = "$TAG"
+```
 
 Do not reuse or move an existing public tag.
 
@@ -88,13 +96,13 @@ Do not update dependencies during a release check. Make dependency updates in a 
 
 ## 6. Verify code and committed build output
 
-Run the repository verification command:
+Run the release verification command:
 
 ```bash
-pnpm verify
+pnpm release:ready
 ```
 
-`pnpm verify` checks types, tests, build output, and package contents.
+`pnpm release:ready` checks version references, the selected license, native types, tests, build output, the packed Core contract, package lint, and package contents.
 
 Then make sure the build did not change committed `dist/` files:
 
@@ -191,7 +199,7 @@ git status --short
 git log -1 --show-signature --stat
 ```
 
-Push the release commit to the protected release branch through the normal review process:
+Push the release commit through the normal review process. After the first public release, maintainers must keep `main` protected:
 
 ```bash
 git push origin main
@@ -199,7 +207,133 @@ git push origin main
 
 Wait for the GitHub `CI` workflow on that exact commit. Both supported Node.js jobs must be green. Do not tag a commit with pending, skipped, cancelled, or failed required checks.
 
-## 10. Create an annotated tag
+## 10. Configure the public repository
+
+Complete this section before the first public tag. For a later release, verify that the settings remain active.
+
+Changing visibility exposes all reachable Git objects. Stop unless the rights, license, secret, identity, and exact-commit checks have passed.
+
+```bash
+gh repo edit Jeecabs/pi-tooltime \
+  --visibility public \
+  --accept-visibility-change-consequences
+
+gh repo edit Jeecabs/pi-tooltime \
+  --description "Local-first tool-use analytics and coaching for Pi" \
+  --enable-projects=false \
+  --enable-wiki=false \
+  --enable-merge-commit=false \
+  --enable-rebase-merge=false \
+  --enable-squash-merge=true \
+  --delete-branch-on-merge \
+  --add-topic pi-package \
+  --add-topic pi-extension \
+  --add-topic developer-tools \
+  --add-topic analytics
+
+gh repo edit Jeecabs/pi-tooltime --enable-secret-scanning
+gh repo edit Jeecabs/pi-tooltime --enable-secret-scanning-push-protection
+```
+
+Enable confidential vulnerability reports, immutable releases, and required action SHA pins:
+
+```bash
+gh api --method PUT repos/Jeecabs/pi-tooltime/private-vulnerability-reporting
+gh api --method PUT repos/Jeecabs/pi-tooltime/immutable-releases
+gh api --method PUT repos/Jeecabs/pi-tooltime/actions/permissions \
+  -F enabled=true \
+  -f allowed_actions=all \
+  -F sha_pinning_required=true
+```
+
+Protect `main` without an approval requirement that would block a sole maintainer:
+
+```bash
+gh api --method PUT repos/Jeecabs/pi-tooltime/branches/main/protection --input - <<'JSON'
+{
+  "required_status_checks": {
+    "strict": true,
+    "checks": [
+      { "context": "Node 22.19.0" },
+      { "context": "Node 24" }
+    ]
+  },
+  "enforce_admins": true,
+  "required_pull_request_reviews": null,
+  "restrictions": null,
+  "required_conversation_resolution": true,
+  "required_linear_history": true,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+JSON
+```
+
+Protect release tags from update and deletion while still allowing a new tag:
+
+```bash
+gh api --method POST repos/Jeecabs/pi-tooltime/rulesets --input - <<'JSON'
+{
+  "name": "Protect release tags",
+  "target": "tag",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": ["refs/tags/v*"],
+      "exclude": []
+    }
+  },
+  "rules": [
+    {
+      "type": "update",
+      "parameters": { "update_allows_fetch_and_merge": false }
+    },
+    { "type": "deletion" },
+    { "type": "non_fast_forward" }
+  ]
+}
+JSON
+```
+
+Verify the settings before tag creation:
+
+```bash
+gh repo view Jeecabs/pi-tooltime \
+  --json visibility,mergeCommitAllowed,rebaseMergeAllowed,squashMergeAllowed \
+  --jq '.visibility == "PUBLIC" and (.mergeCommitAllowed | not) and (.rebaseMergeAllowed | not) and .squashMergeAllowed'
+gh api repos/Jeecabs/pi-tooltime --jq '.security_and_analysis.secret_scanning.status == "enabled" and .security_and_analysis.secret_scanning_push_protection.status == "enabled"'
+gh api repos/Jeecabs/pi-tooltime/private-vulnerability-reporting --jq '.enabled == true'
+gh api repos/Jeecabs/pi-tooltime/immutable-releases --jq '.enabled == true'
+gh api repos/Jeecabs/pi-tooltime/actions/permissions --jq '.enabled == true and .sha_pinning_required == true'
+gh api repos/Jeecabs/pi-tooltime/branches/main/protection --jq '
+  .required_status_checks.strict == true and
+  ([.required_status_checks.checks[].context] | sort) == ["Node 22.19.0", "Node 24"] and
+  .enforce_admins.enabled == true and
+  .required_pull_request_reviews == null and
+  .required_conversation_resolution.enabled == true and
+  .required_linear_history.enabled == true and
+  .allow_force_pushes.enabled == false and
+  .allow_deletions.enabled == false
+'
+
+tag_ruleset_id="$(gh api repos/Jeecabs/pi-tooltime/rulesets --jq '
+  [.[] | select(.name == "Protect release tags" and .target == "tag")] |
+  if length == 1 then .[0].id else error("expected one release-tag ruleset") end
+')"
+gh api "repos/Jeecabs/pi-tooltime/rulesets/$tag_ruleset_id" --jq '
+  .target == "tag" and
+  .enforcement == "active" and
+  .conditions.ref_name.include == ["refs/tags/v*"] and
+  .conditions.ref_name.exclude == [] and
+  ([.rules[].type] | sort) == ["deletion", "non_fast_forward", "update"] and
+  ((.rules[] | select(.type == "update") | .parameters.update_allows_fetch_and_merge) == false) and
+  (.bypass_actors | length) == 0
+'
+```
+
+Each Boolean command must print `true`. The ruleset ID assignment must succeed.
+
+## 11. Create an annotated tag
 
 Use a signed annotated tag when repository config enables tag signing and a signing identity is available:
 
@@ -227,22 +361,43 @@ The two commit IDs must match. Then push only the selected tag:
 git push origin "$TAG"
 ```
 
-## 11. Create the GitHub Release
+## 12. Create the GitHub Release
 
 Copy the matching changelog section into a temporary release-notes file. Check every claim against the tagged code and tests.
 
 ```bash
+release_flags=()
+if [[ "$TAG" == *-* ]]; then
+  release_flags+=(--prerelease)
+fi
+
 gh release create "$TAG" \
   --verify-tag \
   --title "Pi Tooltime ${TAG#v}" \
-  --notes-file /path/to/release-notes.md
+  --notes-file /path/to/release-notes.md \
+  "${release_flags[@]}"
+```
+
+Wait for immutable-release finalization. Then verify the published release and its GitHub attestation:
+
+```bash
+expected_prerelease=false
+if [[ "$TAG" == *-* ]]; then
+  expected_prerelease=true
+fi
+
+test "$(gh release view "$TAG" --json tagName --jq .tagName)" = "$TAG"
+gh release view "$TAG" \
+  --json isDraft,isPrerelease,isImmutable \
+  --jq ".isDraft == false and .isPrerelease == $expected_prerelease and .isImmutable == true"
+gh release verify "$TAG"
 ```
 
 Open the release page without authentication and verify the tag, source archives, notes, and links.
 
 Do not attach an npm publication. Do not run an npm publish command after the GitHub Release.
 
-## 12. Verify an unauthenticated clone
+## 13. Verify an unauthenticated clone
 
 Clone the public tag without stored GitHub credentials:
 
@@ -269,7 +424,7 @@ Run the frozen install and verification from that clone:
 ```bash
 cd "$public_dir"
 pnpm install --frozen-lockfile
-pnpm verify
+pnpm release:ready
 ```
 
 Repeat the packed-core and Pi RPC smoke tests from the public clone. Confirm that README installation and internal documentation links resolve.
@@ -280,18 +435,19 @@ Remove temporary files after all checks pass:
 rm -rf -- "$release_tmp"
 ```
 
-## 13. Record the result
+## 14. Record the result
 
 Record these release facts in the maintainer log or release issue:
 
 - Release tag and commit ID.
 - Rights and license gate approval.
 - Secret scanner and version.
-- `pnpm verify` result.
+- `pnpm release:ready` result.
 - Clean `dist/` result.
 - Tarball import result.
 - Pi RPC result.
 - GitHub CI run URL.
+- Public repository setting verification.
 - Tag signature status.
 - GitHub Release URL.
 - Unauthenticated clone result.

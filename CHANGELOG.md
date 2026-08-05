@@ -6,15 +6,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Ver
 
 ## [Unreleased]
 
-### Changed
-
-- Replaced the package-root wildcard barrel with the curated Core v1 candidate.
-- Added a strict raw-event task recorder, trace decoding diagnostics, deeply frozen outputs, audience-explicit formatting, and rejected-trace accounting.
-- Made finding task aggregation independent of caller-supplied task ID uniqueness.
-- Made Core ordering independent of host locale and removed quadratic mutation-barrier scans from finding detection.
-- Moved type checking and declaration builds to the locked TypeScript 7 native compiler (`tsgo`).
-
-## [0.1.0] - 2026-08-05
+## [1.0.0-rc.1] - 2026-08-05
 
 ### Added
 
@@ -24,10 +16,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Ver
 - Added fixed call classifications, fixed Result Kinds, and process-keyed `h1:` Local Fingerprints.
 - Added deterministic detectors for repeated calls, full-suite loops, broad searches, slow empty searches, and explicit source-routing mismatches.
 - Added bounded baseline and observed Guidance Rules with policy version fields.
-- Added the Pi-independent package-root core API and compiled declarations.
+- Added the Pi-independent package-root Core v1 release candidate and compiled declarations.
+- Added a strict raw-event task recorder, trace-decoding diagnostics, frozen outputs, audience-explicit formatting, and rejected-trace accounting.
 - Added opt-in Remote Export with an explicit smaller trace schema.
 - Added project trust handling for project config. Pi Tooltime ignores project Remote Export values.
 - Added a unique JSONL writer file for each store instance, including instances that share a session ID.
+- Added packed runtime and native TypeScript consumer contract checks.
+
+### Changed
+
+- Replaced the package-root wildcard barrel with five reviewed runtime exports.
+- Made finding task aggregation independent of caller-supplied task ID uniqueness.
+- Made Core ordering independent of host locale.
+- Removed quadratic mutation-barrier scans from finding detection.
+- Moved type checking and declaration builds to the locked TypeScript 7 native compiler (`tsgo`).
+- Aligned Node declarations and Pi peer metadata with the minimum supported runtime lines.
 
 ### Security
 
@@ -41,6 +44,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Ver
 - Added model-safe grouping for custom tool identifiers in `/tooltime analyze` reports.
 - Added protection against file-based remote opt-in from relative or project-contained agent directories.
 - Added bounded pending remote requests, timeouts, no retries, and status-only failure reporting.
+- Added strict Core lifecycle errors, runtime input bounds, immutable result snapshots, and hostile-input containment.
 
-[Unreleased]: https://github.com/Jeecabs/pi-tooltime/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/Jeecabs/pi-tooltime/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Jeecabs/pi-tooltime/compare/v1.0.0-rc.1...HEAD
+[1.0.0-rc.1]: https://github.com/Jeecabs/pi-tooltime/releases/tag/v1.0.0-rc.1

@@ -1,4 +1,5 @@
 import { sanitizeTaskTrace } from "./core/sanitize.js";
+import { PACKAGE_VERSION } from "./version.js";
 const DEFAULT_MAX_PENDING = 8;
 const BEARER_TOKEN = /^[A-Za-z0-9\-._~+/]+=*$/u;
 class RemoteResponseError extends Error {
@@ -101,7 +102,7 @@ export class RemoteTraceExporter {
     async send(trace) {
         const headers = {
             "Content-Type": "application/json",
-            "User-Agent": "pi-tooltime/0.1.0",
+            "User-Agent": `pi-tooltime/${PACKAGE_VERSION}`,
         };
         if (this.token)
             headers.Authorization = `Bearer ${this.token}`;

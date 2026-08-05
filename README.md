@@ -18,11 +18,13 @@ Pi Tooltime inspects task prompts, tool inputs, and tool results in memory. It p
 
 ## Install
 
-Install the pinned v0.1.0 Git tag:
+Install the pinned v1.0.0-rc.1 release candidate:
 
 ```bash
-pi install git:github.com/Jeecabs/pi-tooltime@v0.1.0
+pi install git:github.com/Jeecabs/pi-tooltime@v1.0.0-rc.1
 ```
+
+This is a prerelease. Pin the exact tag and review the changelog before an upgrade.
 
 Package update commands keep this ref pinned. They can reset its checkout to the selected ref, but they do not select a newer release.
 
@@ -146,10 +148,10 @@ Remote Export is off by default. Project config cannot control it. File-based re
 
 A pinned Git ref stays pinned during `pi update --extensions` and `pi update --all`. These commands can reconcile the checkout to that ref.
 
-To move a pinned installation, install the new ref explicitly:
+To move a pinned installation, set `NEW_TAG` to the next reviewed release tag and run:
 
 ```bash
-pi install git:github.com/Jeecabs/pi-tooltime@v0.2.0
+pi install "git:github.com/Jeecabs/pi-tooltime@${NEW_TAG:?set NEW_TAG first}"
 ```
 
 Update an unpinned edge installation with:
@@ -198,16 +200,16 @@ pi -e .
 Use the same package source that appears in `pi list`. For the pinned global install above, run:
 
 ```bash
-pi remove git:github.com/Jeecabs/pi-tooltime@v0.1.0
+pi remove git:github.com/Jeecabs/pi-tooltime@v1.0.0-rc.1
 ```
 
 For a project-local install, include both the source and `-l`:
 
 ```bash
-pi remove git:github.com/Jeecabs/pi-tooltime@v0.1.0 -l
+pi remove git:github.com/Jeecabs/pi-tooltime@v1.0.0-rc.1 -l
 ```
 
-Omit `@v0.1.0` if you installed the unpinned source. Restart Pi or run `/reload` after removal.
+Omit `@v1.0.0-rc.1` if you installed the unpinned source. Restart Pi or run `/reload` after removal.
 
 The remove command does not delete analytics or config. Stop all Pi processes before the next commands. They permanently delete local Tooltime data and user-global Tooltime config.
 

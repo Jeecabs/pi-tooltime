@@ -35,7 +35,7 @@ body:
     id: version
     attributes:
       label: Pi Tooltime version
-      placeholder: 0.1.0
+      placeholder: 1.0.0-rc.1
   - type: checkboxes
     id: privacy
     attributes:

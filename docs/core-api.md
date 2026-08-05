@@ -2,7 +2,7 @@
 
 Pi Tooltime ships a Pi-independent Node.js core for evaluation harnesses and other programs. The package root does not register the extension, write files, or make network requests.
 
-The curated interface below is the Core v1 candidate. It remains pre-release until the package reaches version 1.0.0. Before that release, the project can still correct this interface without a compatibility promise.
+The curated interface below is the Core v1 release candidate. Package version 1.0.0-rc.1 can still change before the stable 1.0.0 release.
 
 ## Requirements and package shape
 
@@ -15,7 +15,7 @@ Add a release tag to a consuming project:
 ```json
 {
   "dependencies": {
-    "pi-tooltime": "github:Jeecabs/pi-tooltime#v1.0.0"
+    "pi-tooltime": "github:Jeecabs/pi-tooltime#v1.0.0-rc.1"
   }
 }
 ```

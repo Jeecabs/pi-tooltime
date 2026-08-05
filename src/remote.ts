@@ -1,6 +1,7 @@
 import { sanitizeTaskTrace } from "./core/sanitize.ts";
 import type { TaskTrace } from "./core/types.ts";
 import type { RemoteTooltimeConfig } from "./config.ts";
+import { PACKAGE_VERSION } from "./version.ts";
 
 const DEFAULT_MAX_PENDING = 8;
 const BEARER_TOKEN = /^[A-Za-z0-9\-._~+/]+=*$/u;
@@ -140,7 +141,7 @@ export class RemoteTraceExporter {
   private async send(trace: TaskTrace): Promise<void> {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "User-Agent": "pi-tooltime/0.1.0",
+      "User-Agent": `pi-tooltime/${PACKAGE_VERSION}`,
     };
     if (this.token) headers.Authorization = `Bearer ${this.token}`;
     const body = JSON.stringify({
