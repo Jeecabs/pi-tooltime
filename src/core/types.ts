@@ -21,105 +21,107 @@ export type FindingConfidence = "high" | "medium";
 export type TaskOutcome = "completed" | "error" | "aborted";
 
 export interface ClassifiedToolCall {
-  toolName: ToolName;
-  fingerprint: string;
-  family: ToolFamily;
-  operation: ToolOperation;
-  scope?: ToolScope;
-  mutates: boolean;
+  readonly toolName: ToolName;
+  readonly fingerprint: string;
+  readonly family: ToolFamily;
+  readonly operation: ToolOperation;
+  readonly scope?: ToolScope;
+  readonly mutates: boolean;
 }
 
 export interface ToolCallSpan extends ClassifiedToolCall {
-  sequence: number;
-  startOffsetMs: number;
-  durationMs: number;
-  isError: boolean;
-  resultKind: ToolResultKind;
+  readonly sequence: number;
+  readonly startOffsetMs: number;
+  readonly durationMs: number;
+  readonly isError: boolean;
+  readonly resultKind: ToolResultKind;
 }
 
 export interface EfficiencyFinding {
-  code: EfficiencyFindingCode;
-  signature: EfficiencyFindingCode;
-  confidence: FindingConfidence;
-  callSequences: number[];
-  suspectedWasteMs: number;
-  guidanceId: GuidanceId;
-  guidance: string;
+  readonly code: EfficiencyFindingCode;
+  readonly signature: EfficiencyFindingCode;
+  readonly confidence: FindingConfidence;
+  readonly callSequences: readonly number[];
+  readonly suspectedWasteMs: number;
+  readonly guidanceId: GuidanceId;
+  readonly guidance: string;
 }
 
 export interface TaskTrace {
-  schemaVersion: 1;
-  taskId: string;
-  sessionId: string;
-  startedAt: string;
-  completedAt: string;
-  outcome: TaskOutcome;
-  mode: TooltimeMode;
-  intent?: TaskIntent;
-  policyVersion?: string;
-  injectedRuleIds: string[];
-  taskWallMs: number;
-  toolWallMs: number;
-  toolCallMs: number;
-  suspectedWasteMs: number;
-  calls: ToolCallSpan[];
-  findings: EfficiencyFinding[];
-  droppedCallCount: number;
+  readonly schemaVersion: 1;
+  readonly taskId: string;
+  readonly sessionId: string;
+  readonly startedAt: string;
+  readonly completedAt: string;
+  readonly outcome: TaskOutcome;
+  readonly mode: TooltimeMode;
+  readonly intent?: TaskIntent;
+  readonly policyVersion?: string;
+  readonly injectedRuleIds: readonly GuidanceId[];
+  readonly taskWallMs: number;
+  readonly toolWallMs: number;
+  readonly toolCallMs: number;
+  readonly suspectedWasteMs: number;
+  readonly calls: readonly ToolCallSpan[];
+  readonly findings: readonly EfficiencyFinding[];
+  readonly droppedCallCount: number;
 }
 
 export interface DetectionOptions {
-  slowCallMs: number;
+  readonly slowCallMs: number;
 }
 
 export interface FindingAggregate {
-  code: EfficiencyFindingCode;
-  signature: EfficiencyFindingCode;
-  confidence: FindingConfidence;
-  guidanceId: GuidanceId;
-  guidance: string;
-  taskCount: number;
-  occurrenceCount: number;
-  totalWasteMs: number;
-  lastSeenAt: string;
+  readonly code: EfficiencyFindingCode;
+  readonly signature: EfficiencyFindingCode;
+  readonly confidence: FindingConfidence;
+  readonly guidanceId: GuidanceId;
+  readonly guidance: string;
+  readonly taskCount: number;
+  readonly occurrenceCount: number;
+  readonly totalWasteMs: number;
+  readonly lastSeenAt: string;
 }
 
 export interface ModeSummary {
-  mode: TooltimeMode;
-  taskCount: number;
-  taskWallMs: number;
-  toolWallMs: number;
-  toolCallMs: number;
-  suspectedWasteMs: number;
+  readonly mode: TooltimeMode;
+  readonly taskCount: number;
+  readonly taskWallMs: number;
+  readonly toolWallMs: number;
+  readonly toolCallMs: number;
+  readonly suspectedWasteMs: number;
 }
 
 export interface ToolSummary {
-  toolName: ToolName;
-  callCount: number;
-  failureCount: number;
-  callMs: number;
+  readonly toolName: ToolName;
+  readonly callCount: number;
+  readonly failureCount: number;
+  readonly callMs: number;
 }
 
 export interface TraceAnalysis {
-  taskCount: number;
-  taskWallMs: number;
-  toolWallMs: number;
-  toolCallMs: number;
-  suspectedWasteMs: number;
-  callCount: number;
-  failureCount: number;
-  tools: ToolSummary[];
-  findings: FindingAggregate[];
-  modes: ModeSummary[];
+  readonly taskCount: number;
+  readonly taskWallMs: number;
+  readonly toolWallMs: number;
+  readonly toolCallMs: number;
+  readonly suspectedWasteMs: number;
+  readonly callCount: number;
+  readonly failureCount: number;
+  readonly tools: readonly ToolSummary[];
+  readonly findings: readonly FindingAggregate[];
+  readonly modes: readonly ModeSummary[];
+  readonly rejectedTraceCount: number;
+  readonly droppedCallCount: number;
 }
 
 export interface GuidanceRule {
-  id: GuidanceId;
-  text: string;
-  source: "baseline" | "observed";
+  readonly id: GuidanceId;
+  readonly text: string;
+  readonly source: "baseline" | "observed";
 }
 
 export interface GuidancePrompt {
-  text: string;
-  policyVersion: string;
-  rules: GuidanceRule[];
+  readonly text: string;
+  readonly policyVersion: string;
+  readonly rules: readonly GuidanceRule[];
 }

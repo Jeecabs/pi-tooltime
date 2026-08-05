@@ -1,3 +1,4 @@
+import { compareText } from "./order.js";
 import { guidanceFor } from "./policy.js";
 export function unionDurationMs(intervals) {
     const sorted = intervals
@@ -29,24 +30,31 @@ function callIntervals(calls, sequences) {
         .filter((call) => selected.has(call.sequence))
         .map((call) => ({ startMs: call.startOffsetMs, endMs: call.startOffsetMs + call.durationMs }));
 }
-export function callUnionDurationMs(calls, sequences) {
+function callUnionDurationMs(calls, sequences) {
     return unionDurationMs(callIntervals(calls, sequences));
 }
-function mutationsBetween(calls, from, to) {
-    return calls.some((call) => call.sequence > from && call.sequence < to && call.mutates);
+function mutationPrefix(calls) {
+    const prefix = [0];
+    for (const call of calls)
+        prefix.push(prefix[prefix.length - 1] + (call.mutates ? 1 : 0));
+    return prefix;
 }
-function repeatedCallFindings(calls, options) {
+function mutationsBetween(prefix, fromIndex, toIndex) {
+    return prefix[toIndex] > prefix[fromIndex + 1];
+}
+function repeatedCallFindings(calls, options, mutations) {
     const lastByFingerprint = new Map();
     const repeated = [];
     const minimumDuration = Math.min(2_000, options.slowCallMs);
-    for (const call of calls) {
+    for (let index = 0; index < calls.length; index++) {
+        const call = calls[index];
         const previous = lastByFingerprint.get(call.fingerprint);
-        lastByFingerprint.set(call.fingerprint, call);
+        lastByFingerprint.set(call.fingerprint, { call, index });
         if (!previous || call.durationMs < minimumDuration)
             continue;
-        if (previous.mutates || call.mutates)
+        if (previous.call.mutates || call.mutates)
             continue;
-        if (mutationsBetween(calls, previous.sequence, call.sequence))
+        if (mutationsBetween(mutations, previous.index, index))
             continue;
         repeated.push(call.sequence);
     }
@@ -62,16 +70,16 @@ function repeatedCallFindings(calls, options) {
             guidance: guidanceFor("avoid-repeat"),
         }];
 }
-function fullSuiteFinding(calls) {
-    const fullTests = calls.filter((call) => call.operation === "test-full" && !call.mutates);
+function fullSuiteFinding(calls, mutations) {
+    const fullTests = calls.flatMap((call, index) => call.operation === "test-full" && !call.mutates ? [{ call, index }] : []);
     if (fullTests.length < 2)
         return undefined;
     const repeated = [];
     for (let index = 1; index < fullTests.length; index++) {
         const previous = fullTests[index - 1];
         const current = fullTests[index];
-        if (current.fingerprint === previous.fingerprint || mutationsBetween(calls, previous.sequence, current.sequence)) {
-            repeated.push(current.sequence);
+        if (current.call.fingerprint === previous.call.fingerprint || mutationsBetween(mutations, previous.index, current.index)) {
+            repeated.push(current.call.sequence);
         }
     }
     if (repeated.length === 0)
@@ -146,14 +154,15 @@ function routeFinding(calls, intent) {
 }
 export function detectEfficiencyFindings(calls, intent, options) {
     const sorted = [...calls].sort((a, b) => a.sequence - b.sequence);
+    const mutations = mutationPrefix(sorted);
     const findings = [
-        ...repeatedCallFindings(sorted, options),
-        fullSuiteFinding(sorted),
+        ...repeatedCallFindings(sorted, options, mutations),
+        fullSuiteFinding(sorted, mutations),
         ...broadSearchFindings(sorted),
         ...slowEmptyFindings(sorted, options),
         routeFinding(sorted, intent),
     ].filter((finding) => finding !== undefined);
-    return findings.sort((a, b) => b.suspectedWasteMs - a.suspectedWasteMs || a.code.localeCompare(b.code));
+    return findings.sort((a, b) => b.suspectedWasteMs - a.suspectedWasteMs || compareText(a.code, b.code));
 }
 export function suspectedWasteDurationMs(calls, findings) {
     const sequences = [...new Set(findings.flatMap((finding) => finding.callSequences))];

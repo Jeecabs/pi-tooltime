@@ -1,8 +1,9 @@
 import { eligibleFindingAggregates, type GuidanceOptions } from "./guidance.ts";
+import { compareText } from "./order.ts";
 import { guidanceFor, normalizeFindingCode, normalizeGuidanceId, normalizeToolName } from "./policy.ts";
 import type { FindingAggregate, ToolSummary, TraceAnalysis } from "./types.ts";
 
-export function formatDuration(ms: number): string {
+function formatDuration(ms: number): string {
   if (ms < 1_000) return `${Math.round(ms)}ms`;
   if (ms < 10_000) return `${(ms / 1_000).toFixed(1)}s`;
   const totalSeconds = Math.round(ms / 1_000);
@@ -70,8 +71,15 @@ function modelToolLabel(value: string): string {
   return "other";
 }
 
+interface ToolAccumulator {
+  toolName: string;
+  callCount: number;
+  failureCount: number;
+  callMs: number;
+}
+
 function modelTools(tools: readonly ToolSummary[]): ToolSummary[] {
-  const groups = new Map<string, ToolSummary>();
+  const groups = new Map<string, ToolAccumulator>();
   for (const tool of tools) {
     const toolName = modelToolLabel(tool.toolName);
     const group = groups.get(toolName) ?? { toolName, callCount: 0, failureCount: 0, callMs: 0 };
@@ -80,7 +88,7 @@ function modelTools(tools: readonly ToolSummary[]): ToolSummary[] {
     group.callMs += tool.callMs;
     groups.set(toolName, group);
   }
-  return [...groups.values()].sort((a, b) => b.callMs - a.callMs || b.callCount - a.callCount || a.toolName.localeCompare(b.toolName));
+  return [...groups.values()].sort((a, b) => b.callMs - a.callMs || b.callCount - a.callCount || compareText(a.toolName, b.toolName));
 }
 
 export function formatTraceAnalysisForModel(analysis: TraceAnalysis, title = "Tooltime report"): string {

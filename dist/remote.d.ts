@@ -1,5 +1,5 @@
-import type { TaskTrace } from "./core/types.ts";
-import type { RemoteTooltimeConfig } from "./config.ts";
+import type { TaskTrace } from "./core/types.js";
+import type { RemoteTooltimeConfig } from "./config.js";
 export interface RemoteFetchResponse {
     ok: boolean;
     status: number;

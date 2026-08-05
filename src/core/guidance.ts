@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { analyzeTraces } from "./analyze.ts";
+import { analyzeTaskTraces } from "./analyze.ts";
 import { guidanceFor, normalizeGuidanceId } from "./policy.ts";
 import type {
   FindingAggregate,
@@ -47,7 +47,7 @@ export function eligibleFindingAggregates(
 }
 
 function candidateRules(traces: readonly TaskTrace[], options: GuidanceOptions): GuidanceRule[] {
-  const observed = eligibleFindingAggregates(analyzeTraces(traces).findings, options).flatMap((finding): GuidanceRule[] => {
+  const observed = eligibleFindingAggregates(analyzeTaskTraces(traces).findings, options).flatMap((finding): GuidanceRule[] => {
     const id = normalizeGuidanceId(finding.guidanceId);
     return id ? [{ id, text: guidanceFor(id), source: "observed" }] : [];
   });
@@ -80,5 +80,3 @@ export function buildGuidancePrompt(traces: readonly TaskTrace[], options: Guida
     .slice(0, 12);
   return { text, policyVersion, rules: selected };
 }
-
-export { BASELINE_RULES };

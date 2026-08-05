@@ -127,10 +127,11 @@ npm install --ignore-scripts --omit=optional "$tarball"
 node --input-type=module <<'EOF'
 const core = await import("pi-tooltime");
 for (const name of [
-  "TaskRecorder",
+  "TooltimeLifecycleError",
   "analyzeTraces",
-  "classifyToolCall",
-  "sanitizeTaskTrace",
+  "createTaskRecorder",
+  "decodeTaskTrace",
+  "formatAnalysis",
 ]) {
   if (!(name in core)) throw new Error(`Missing core export: ${name}`);
 }

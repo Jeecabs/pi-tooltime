@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "runtimeExports": [
+    "TooltimeLifecycleError",
+    "analyzeTraces",
+    "createTaskRecorder",
+    "decodeTaskTrace",
+    "formatAnalysis"
+  ],
+  "declarationFiles": [
+    "dist/core/index.d.ts",
+    "dist/core/public.d.ts",
+    "dist/core/types.d.ts"
+  ],
+  "declarationSha256": "ab21f521752047020f323edaf662011f55d9ad9ca95d1a8809f253a19672b18e"
+}

@@ -1,3 +1,4 @@
+import { compareText } from "./order.ts";
 import { guidanceFor } from "./policy.ts";
 import type {
   DetectionOptions,
@@ -43,25 +44,36 @@ function callIntervals(calls: readonly ToolCallSpan[], sequences: readonly numbe
     .map((call) => ({ startMs: call.startOffsetMs, endMs: call.startOffsetMs + call.durationMs }));
 }
 
-export function callUnionDurationMs(calls: readonly ToolCallSpan[], sequences: readonly number[]): number {
+function callUnionDurationMs(calls: readonly ToolCallSpan[], sequences: readonly number[]): number {
   return unionDurationMs(callIntervals(calls, sequences));
 }
 
-function mutationsBetween(calls: readonly ToolCallSpan[], from: number, to: number): boolean {
-  return calls.some((call) => call.sequence > from && call.sequence < to && call.mutates);
+function mutationPrefix(calls: readonly ToolCallSpan[]): number[] {
+  const prefix = [0];
+  for (const call of calls) prefix.push(prefix[prefix.length - 1]! + (call.mutates ? 1 : 0));
+  return prefix;
 }
 
-function repeatedCallFindings(calls: readonly ToolCallSpan[], options: DetectionOptions): EfficiencyFinding[] {
-  const lastByFingerprint = new Map<string, ToolCallSpan>();
+function mutationsBetween(prefix: readonly number[], fromIndex: number, toIndex: number): boolean {
+  return prefix[toIndex]! > prefix[fromIndex + 1]!;
+}
+
+function repeatedCallFindings(
+  calls: readonly ToolCallSpan[],
+  options: DetectionOptions,
+  mutations: readonly number[],
+): EfficiencyFinding[] {
+  const lastByFingerprint = new Map<string, { call: ToolCallSpan; index: number }>();
   const repeated: number[] = [];
   const minimumDuration = Math.min(2_000, options.slowCallMs);
 
-  for (const call of calls) {
+  for (let index = 0; index < calls.length; index++) {
+    const call = calls[index]!;
     const previous = lastByFingerprint.get(call.fingerprint);
-    lastByFingerprint.set(call.fingerprint, call);
+    lastByFingerprint.set(call.fingerprint, { call, index });
     if (!previous || call.durationMs < minimumDuration) continue;
-    if (previous.mutates || call.mutates) continue;
-    if (mutationsBetween(calls, previous.sequence, call.sequence)) continue;
+    if (previous.call.mutates || call.mutates) continue;
+    if (mutationsBetween(mutations, previous.index, index)) continue;
     repeated.push(call.sequence);
   }
 
@@ -77,16 +89,18 @@ function repeatedCallFindings(calls: readonly ToolCallSpan[], options: Detection
   }];
 }
 
-function fullSuiteFinding(calls: readonly ToolCallSpan[]): EfficiencyFinding | undefined {
-  const fullTests = calls.filter((call) => call.operation === "test-full" && !call.mutates);
+function fullSuiteFinding(calls: readonly ToolCallSpan[], mutations: readonly number[]): EfficiencyFinding | undefined {
+  const fullTests = calls.flatMap((call, index) =>
+    call.operation === "test-full" && !call.mutates ? [{ call, index }] : []
+  );
   if (fullTests.length < 2) return undefined;
 
   const repeated: number[] = [];
   for (let index = 1; index < fullTests.length; index++) {
     const previous = fullTests[index - 1]!;
     const current = fullTests[index]!;
-    if (current.fingerprint === previous.fingerprint || mutationsBetween(calls, previous.sequence, current.sequence)) {
-      repeated.push(current.sequence);
+    if (current.call.fingerprint === previous.call.fingerprint || mutationsBetween(mutations, previous.index, current.index)) {
+      repeated.push(current.call.sequence);
     }
   }
   if (repeated.length === 0) return undefined;
@@ -168,15 +182,16 @@ export function detectEfficiencyFindings(
   options: DetectionOptions,
 ): EfficiencyFinding[] {
   const sorted = [...calls].sort((a, b) => a.sequence - b.sequence);
+  const mutations = mutationPrefix(sorted);
   const findings = [
-    ...repeatedCallFindings(sorted, options),
-    fullSuiteFinding(sorted),
+    ...repeatedCallFindings(sorted, options, mutations),
+    fullSuiteFinding(sorted, mutations),
     ...broadSearchFindings(sorted),
     ...slowEmptyFindings(sorted, options),
     routeFinding(sorted, intent),
   ].filter((finding): finding is EfficiencyFinding => finding !== undefined);
 
-  return findings.sort((a, b) => b.suspectedWasteMs - a.suspectedWasteMs || a.code.localeCompare(b.code));
+  return findings.sort((a, b) => b.suspectedWasteMs - a.suspectedWasteMs || compareText(a.code, b.code));
 }
 
 export function suspectedWasteDurationMs(calls: readonly ToolCallSpan[], findings: readonly EfficiencyFinding[]): number {

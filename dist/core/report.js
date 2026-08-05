@@ -1,6 +1,7 @@
 import { eligibleFindingAggregates } from "./guidance.js";
+import { compareText } from "./order.js";
 import { guidanceFor, normalizeFindingCode, normalizeGuidanceId, normalizeToolName } from "./policy.js";
-export function formatDuration(ms) {
+function formatDuration(ms) {
     if (ms < 1_000)
         return `${Math.round(ms)}ms`;
     if (ms < 10_000)
@@ -79,7 +80,7 @@ function modelTools(tools) {
         group.callMs += tool.callMs;
         groups.set(toolName, group);
     }
-    return [...groups.values()].sort((a, b) => b.callMs - a.callMs || b.callCount - a.callCount || a.toolName.localeCompare(b.toolName));
+    return [...groups.values()].sort((a, b) => b.callMs - a.callMs || b.callCount - a.callCount || compareText(a.toolName, b.toolName));
 }
 export function formatTraceAnalysisForModel(analysis, title = "Tooltime report") {
     const safeTitle = /^Tooltime report(?: · (?:session|project|\d{1,4}d))?$/u.test(title) ? title : "Tooltime report";

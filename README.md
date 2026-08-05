@@ -164,7 +164,7 @@ Restart Pi or run `/reload` after the checkout changes.
 
 The package includes compiled JavaScript and declarations in `dist/`. Eval harnesses can use the Pi-independent Node.js core without loading the extension.
 
-See [Core API](docs/core-api.md) for imports, actual exports, optional peer behavior, and the pre-1.0 stability policy.
+See [Core API](docs/core-api.md) for the curated v1-candidate interface, lifecycle contract, decoding rules, optional peer behavior, and stability policy.
 
 ## Architecture
 
@@ -184,7 +184,7 @@ pnpm verify
 pi -e .
 ```
 
-`pnpm verify` checks types, runs tests, rebuilds `dist/`, and checks package contents.
+`pnpm verify` runs the native TypeScript check, focused tests, rebuild, packed Core contract, package linters, and package-content check.
 
 - [Changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md)

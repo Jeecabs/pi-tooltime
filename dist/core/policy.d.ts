@@ -1,4 +1,4 @@
-import type { EfficiencyFindingCode, GuidanceId, ToolFamily, ToolName, ToolOperation, ToolResultKind, ToolScope } from "./types.ts";
+import type { EfficiencyFindingCode, GuidanceId, ToolFamily, ToolName, ToolOperation, ToolResultKind, ToolScope } from "./types.js";
 export declare const TOOL_FAMILIES: readonly ["repository", "web", "database", "issues", "process", "test", "shell", "other"];
 export declare const TOOL_OPERATIONS: readonly ["read", "search", "analyze", "mutate", "interact", "query", "request", "command", "test-targeted", "test-full", "report", "unknown"];
 export declare const TOOL_SCOPES: readonly ["targeted", "project", "outside", "root", "full", "unknown"];

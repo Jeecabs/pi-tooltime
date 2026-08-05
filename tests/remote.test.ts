@@ -74,34 +74,36 @@ test("remote trace allowlist omits local fingerprints and guidance text", async 
       return { ok: true, status: 202 };
     },
   });
-  const sensitive = {
+  const calls = [{
+    toolName: "read",
+    fingerprint: "fingerprint-must-stay-local",
+    family: "repository",
+    operation: "read",
+    scope: "targeted",
+    mutates: false,
+    sequence: 1,
+    startOffsetMs: 10,
+    durationMs: 20,
+    isError: false,
+    resultKind: "nonempty",
+    extraSecret: "call-extra-secret",
+  }] satisfies readonly (TaskTrace["calls"][number] & { readonly extraSecret: string })[];
+  const findings = [{
+    code: "search.broad-scope",
+    signature: "search.broad-scope",
+    confidence: "high",
+    callSequences: [1],
+    suspectedWasteMs: 20,
+    guidanceId: "target-first",
+    guidance: "HOSTILE_GUIDANCE",
+    extraSecret: "finding-extra-secret",
+  }] satisfies readonly (TaskTrace["findings"][number] & { readonly extraSecret: string })[];
+  const sensitive: TaskTrace & { readonly extraSecret: string } = {
     ...trace(),
-    calls: [{
-      toolName: "read",
-      fingerprint: "fingerprint-must-stay-local",
-      family: "repository",
-      operation: "read",
-      scope: "targeted",
-      mutates: false,
-      sequence: 1,
-      startOffsetMs: 10,
-      durationMs: 20,
-      isError: false,
-      resultKind: "nonempty",
-      extraSecret: "call-extra-secret",
-    }],
-    findings: [{
-      code: "search.broad-scope",
-      signature: "search.broad-scope",
-      confidence: "high",
-      callSequences: [1],
-      suspectedWasteMs: 20,
-      guidanceId: "target-first",
-      guidance: "HOSTILE_GUIDANCE",
-      extraSecret: "finding-extra-secret",
-    }],
+    calls,
+    findings,
     extraSecret: "trace-extra-secret",
-  } as unknown as TaskTrace;
+  };
 
   exporter.schedule(sensitive);
   await exporter.flush();

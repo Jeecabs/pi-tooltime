@@ -1,4 +1,4 @@
-import type { TaskTrace } from "./core/types.ts";
+import type { TaskTrace } from "./core/types.js";
 export interface TooltimeStoreOptions {
     agentDir: string;
     cwd: string;

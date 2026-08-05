@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { analyzeTraces } from "./analyze.js";
+import { analyzeTaskTraces } from "./analyze.js";
 import { guidanceFor, normalizeGuidanceId } from "./policy.js";
 const BASELINE_RULES = Object.freeze([
     Object.freeze({
@@ -24,7 +24,7 @@ export function eligibleFindingAggregates(findings, options) {
         && finding.totalWasteMs >= options.minTotalDurationMs);
 }
 function candidateRules(traces, options) {
-    const observed = eligibleFindingAggregates(analyzeTraces(traces).findings, options).flatMap((finding) => {
+    const observed = eligibleFindingAggregates(analyzeTaskTraces(traces).findings, options).flatMap((finding) => {
         const id = normalizeGuidanceId(finding.guidanceId);
         return id ? [{ id, text: guidanceFor(id), source: "observed" }] : [];
     });
@@ -58,4 +58,3 @@ export function buildGuidancePrompt(traces, options) {
         .slice(0, 12);
     return { text, policyVersion, rules: selected };
 }
-export { BASELINE_RULES };

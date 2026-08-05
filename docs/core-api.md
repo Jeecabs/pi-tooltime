@@ -1,11 +1,13 @@
 # Core API
 
-Pi Tooltime ships a Pi-independent Node.js core for eval harnesses and other programs. The package root does not register the extension, write local traces, or send remote requests.
+Pi Tooltime ships a Pi-independent Node.js core for evaluation harnesses and other programs. The package root does not register the extension, write files, or make network requests.
+
+The curated interface below is the Core v1 candidate. It remains pre-release until the package reaches version 1.0.0. Before that release, the project can still correct this interface without a compatibility promise.
 
 ## Requirements and package shape
 
 - Node.js 22.19.0 or later.
-- ECMAScript modules.
+- ECMAScript modules. CommonJS `require()` is not supported.
 - A pinned Git dependency. Pi Tooltime is not published to npm.
 
 Add a release tag to a consuming project:
@@ -13,7 +15,7 @@ Add a release tag to a consuming project:
 ```json
 {
   "dependencies": {
-    "pi-tooltime": "github:Jeecabs/pi-tooltime#v0.1.0"
+    "pi-tooltime": "github:Jeecabs/pi-tooltime#v1.0.0"
   }
 }
 ```
@@ -22,172 +24,215 @@ The package has two exports:
 
 | Export | Target | Purpose |
 | --- | --- | --- |
-| `pi-tooltime` | `dist/core/index.js` | Pi-independent core. |
+| `pi-tooltime` | `dist/core/index.js` | Pi-independent Core v1 interface. |
 | `pi-tooltime/extension` | `dist/index.js` | Pi extension default export. |
 
-`@earendil-works/pi-coding-agent` is an optional peer dependency. A core-only runtime does not need that peer. The extension export needs a Pi host. That host supplies the peer APIs.
+`@earendil-works/pi-coding-agent` is an optional peer dependency. A core-only runtime does not need it. The extension export needs a Pi host.
 
-The root does not export configuration, local storage, or Remote Export adapters. Those adapters are extension internals in v0.1.0.
+Do not import `src/*.ts`, `dist/core/*.js`, or undeclared package subpaths. Those files are implementation details.
 
-## Import
+## Runtime interface
 
-Use the package root in a consuming project:
-
-```ts
-import {
-  TaskRecorder,
-  analyzeTraces,
-  classifyToolCall,
-  classifyToolResult,
-} from "pi-tooltime";
-```
-
-For a direct checkout, import compiled output:
-
-```ts
-import {
-  TaskRecorder,
-  analyzeTraces,
-} from "./dist/core/index.js";
-```
-
-Do not import `src/*.ts` from a consumer. Those files need a TypeScript loader and are not package exports.
-
-## Record one task
-
-This example uses synthetic call IDs and the process clock:
-
-```ts
-import {
-  TaskRecorder,
-  analyzeTraces,
-  classifyToolCall,
-  classifyToolResult,
-} from "pi-tooltime";
-
-const recorder = new TaskRecorder({
-  sessionId: "eval-run-42",
-  mode: "analytics",
-  detection: { slowCallMs: 5_000 },
-  maxCalls: 500,
-});
-
-recorder.startTool(
-  "call-1",
-  classifyToolCall("read", { path: "src/index.ts" }, process.cwd()),
-);
-
-recorder.finishTool("call-1", {
-  isError: false,
-  resultKind: classifyToolResult("file text", false),
-});
-
-const trace = recorder.finish("completed");
-const analysis = analyzeTraces([trace]);
-
-console.log({
-  taskWallMs: analysis.taskWallMs,
-  toolWallMs: analysis.toolWallMs,
-  toolCallMs: analysis.toolCallMs,
-  suspectedWasteMs: analysis.suspectedWasteMs,
-});
-```
-
-Call `updateTool(callId, classification)` before `finishTool` when a hook changes tool input after execution starts.
-
-`TaskRecorder` uses a monotonic clock for durations and a wall clock for timestamps. Tests can pass `now` and `wallNow` functions for deterministic results.
-
-## Actual value exports
-
-The package root exports these runtime values in v0.1.0:
-
-| Group | Exports |
-| --- | --- |
-| Analysis | `analyzeTraces`, `recentTraces` |
-| Classification | `classifyTaskIntent`, `classifyToolCall`, `classifyToolResult`, `toolFingerprint` |
-| Detection and timing | `callUnionDurationMs`, `detectEfficiencyFindings`, `suspectedWasteDurationMs`, `unionDurationMs` |
-| Guidance | `BASELINE_RULES`, `buildGuidancePrompt`, `eligibleFindingAggregates` |
-| Policy constants | `FINDING_CODES`, `GUIDANCE_IDS`, `GUIDANCE_REGISTRY`, `TOOL_FAMILIES`, `TOOL_OPERATIONS`, `TOOL_RESULT_KINDS`, `TOOL_SCOPES` |
-| Policy normalization | `guidanceFor`, `guidanceIdForFinding`, `normalizeFindingCode`, `normalizeGuidanceId`, `normalizeToolFamily`, `normalizeToolName`, `normalizeToolOperation`, `normalizeToolResultKind`, `normalizeToolScope` |
-| Recording | `TaskRecorder` |
-| Reports | `formatDuration`, `formatFindingCandidates`, `formatTraceAnalysis`, `formatTraceAnalysisForModel` |
-| Sanitization | `STORED_CALL_ALLOWLIST`, `STORED_FINDING_ALLOWLIST`, `STORED_TRACE_ALLOWLIST`, `sanitizeClassification`, `sanitizeTaskTrace` |
-
-`analyzeTraces` aggregates findings, tools, modes, and timing.
-
-## Actual type exports
-
-The root also exports these TypeScript types and interfaces:
+The root exports five runtime values:
 
 ```text
-ClassifiedToolCall
-DetectionOptions
-EfficiencyFinding
-EfficiencyFindingCode
-FindingAggregate
-FindingConfidence
-FinishToolInput
-GuidanceId
-GuidanceOptions
-GuidancePrompt
-GuidanceRule
-Interval
-ModeSummary
+TooltimeLifecycleError
+analyzeTraces
+createTaskRecorder
+decodeTaskTrace
+formatAnalysis
+```
+
+The root exports these named types:
+
+```text
+DecodeIssue
+DecodeIssueCode
+DecodeTaskTraceResult
+FormatAnalysisOptions
+LifecycleErrorCode
+RecorderOptions
 TaskIntent
 TaskOutcome
-TaskRecorderOptions
+TaskRecorder
 TaskTrace
-ToolCallSpan
-ToolFamily
-ToolName
-ToolOperation
-ToolResultKind
-ToolScope
-ToolSummary
-TooltimeMode
+ToolEvent
+TooltimeClock
 TraceAnalysis
 ```
 
-These types come from public core modules. They can change under the pre-1.0 policy.
+Adding an accidental helper to an internal module does not add it to this interface.
 
-`formatTraceAnalysisForModel` groups custom tool identifiers into fixed model-safe labels. Use it before you put a report in model context. `formatTraceAnalysis` preserves normalized tool identifiers for local human reports.
+## Record one task
 
-## Host adapter responsibilities
+`createTaskRecorder` accepts raw lifecycle events. It classifies task intent, tool calls, and results. It also calculates fingerprints, interval timing, and findings.
 
-A host adapter must:
+```ts
+import {
+  analyzeTraces,
+  createTaskRecorder,
+  formatAnalysis,
+} from "pi-tooltime";
 
-1. Create one recorder for each accepted task boundary.
-2. Use stable call IDs to match tool start, update, and finish events.
-3. Reclassify final tool input when hooks can mutate it.
-4. Call `finish` after automatic retries and continuations settle.
-5. Keep raw prompts, tool inputs, and results out of persistence.
-6. Store or export only the schema for that destination.
-7. Close active calls on abort or shutdown.
+const task = createTaskRecorder({
+  sessionId: "eval-run-42",
+  taskId: "case-7",
+  cwd: process.cwd(),
+  prompt: "Inspect the repository",
+});
 
-The Pi adapter from `pi-tooltime/extension` is one implementation.
+task.record({
+  type: "start",
+  callId: "call-1",
+  toolName: "read",
+  input: { path: "src/index.ts" },
+});
 
-## Classification contract
+task.record({
+  type: "finish",
+  callId: "call-1",
+  result: "file text",
+  isError: false,
+});
 
-`classifyToolCall` preserves a safe lowercase tool identifier. Unsafe names collapse to a fixed family or `other`.
+const trace = task.finish("completed");
+const analysis = analyzeTraces([trace]);
 
-Input actions map to fixed coarse operations. Raw action strings are not part of `ClassifiedToolCall`. Unknown actions become `unknown` and mutating.
+console.log(formatAnalysis(analysis, {
+  audience: "human",
+  title: "Eval run 42",
+}));
+```
 
-`classifyToolResult` inspects bounded text and returns only `nonempty`, `empty`, `error`, or `unknown`.
+Use an `update` event when a host hook changes the final tool name or input:
 
-Call `sanitizeTaskTrace` before accepting a trace from another process or older storage. It enforces field allowlists and fixed policy values.
+```ts
+task.record({
+  type: "update",
+  callId: "call-1",
+  toolName: "read",
+  input: { path: "src/core/index.ts" },
+});
+```
 
-## Fingerprint scope
+Raw prompts, current working directories, call IDs, tool inputs, and tool results do not enter the returned Task Trace.
 
-`toolFingerprint` returns a process-keyed HMAC with an `h1:` prefix. Equal canonical inputs in one process produce equal fingerprints.
+## Recorder options
 
-The random process key is not exported or stored. Fingerprints from separate Node.js processes are intentionally not comparable.
+| Option | Requirement | Default |
+| --- | --- | --- |
+| `sessionId` | 1 to 128 letters, digits, underscores, or hyphens. Required. | None. |
+| `taskId` | Same format as `sessionId`. | Random UUID. |
+| `cwd` | Nonempty string, at most 4,096 characters. | `process.cwd()` captured at construction. |
+| `mode` | `analytics` or `coach`. | `analytics`. |
+| `prompt` | String. Core inspects only the first 32,768 characters. | None. |
+| `intent` | `repository`, `web`, or `database`. It overrides prompt inference. | Inferred when unambiguous. |
+| `slowCallMs` | Safe integer from 0 through 3,600,000. | 5,000. |
+| `maxCalls` | Safe integer from 1 through 5,000. | 500. |
+| `clock` | Optional monotonic and wall-clock adapter. | Process clocks. |
 
-Do not use a fingerprint as an identity, secret, cache key, or cross-run metric. Do not put it in a Remote Trace.
+The recorder accepts at most `maxCalls` start events. It throws a lifecycle error instead of retaining unbounded call state.
 
-## Stability before 1.0
+## Lifecycle contract
 
-Pi Tooltime uses release tags, but its public API is pre-1.0. A minor release can change function signatures, exports, enum members, or trace fields.
+Call sequence numbers use accepted start order, not finish order. Calls can overlap and finish in any order.
 
-Pin a tag or commit. Review the [changelog](../CHANGELOG.md) before an upgrade. Compile and test the consuming project against each new version.
+`record` uses these strict rules:
 
-`schemaVersion` versions serialized records. It does not guarantee automatic migration between releases.
+- A duplicate active call ID throws `TooltimeLifecycleError` with code `duplicate-call`.
+- An update or finish for an unknown call ID throws code `unknown-call`.
+- A start after the call limit throws code `call-limit`.
+- Any event after task finish throws code `task-finished`.
+- Invalid event values throw `TypeError` or `RangeError`.
+
+Errors do not include caller IDs, prompts, tool input, or tool results.
+
+`finish` closes every active call at one monotonic timestamp as an errored call. It sorts spans by start sequence. Repeated calls to `finish` return the same deeply frozen Task Trace.
+
+A custom monotonic clock must return finite nondecreasing numbers from one clock domain. A custom wall clock must return a valid `Date`. Tool Wall Time is the interval union. Tool Call Sum includes overlap and can exceed Task Wall Time.
+
+## Decode persisted traces
+
+Treat parsed JSON and older local records as untrusted input:
+
+```ts
+import { decodeTaskTrace } from "pi-tooltime";
+
+const decoded = decodeTaskTrace(JSON.parse(line));
+if (!decoded.ok) {
+  console.error(decoded.issues.map((issue) => issue.code));
+} else {
+  consume(decoded.value);
+}
+```
+
+The decoder:
+
+- Accepts Task Trace schema version 1.
+- Applies the fixed field allowlist and vocabulary normalization.
+- Rejects unsupported versions and invalid required fields.
+- Rejects inconsistent chronology, timing, error/result, sequence, or finding references.
+- Returns `normalized-trace` when it safely removes or replaces data.
+- Returns a deeply frozen Task Trace.
+
+Decoder issue codes do not contain input values.
+
+## Analyze traces
+
+`analyzeTraces` accepts any iterable. It decodes every item before aggregation.
+
+```ts
+const analysis = analyzeTraces(rows.map((row) => JSON.parse(row)));
+console.log(analysis.taskCount);
+console.log(analysis.rejectedTraceCount);
+```
+
+Malformed records increment `rejectedTraceCount`. They do not silently change `taskCount`. The function accepts at most 100,000 iterable items and rejects unsafe aggregate-number overflow.
+
+Finding `taskCount` counts trace instances with that finding. It does not depend on caller-supplied task ID uniqueness. Multiple findings of one code and confidence in one trace count as one finding task and multiple occurrences.
+
+Ordering is deterministic:
+
+- Tool summaries: call duration descending, call count descending, then identifier by code-point order.
+- Findings: suspected duration descending, task count descending, then code by code-point order.
+- Modes: code-point order.
+
+The returned analysis and nested values are deeply frozen.
+
+## Format analysis
+
+The caller must select an audience:
+
+```ts
+formatAnalysis(analysis, { audience: "human", title: "Local report" });
+formatAnalysis(analysis, { audience: "model" });
+```
+
+Human reports can contain normalized custom tool identifiers. Human titles remove control characters and have a 120-character limit.
+
+Model reports use a fixed title and replace custom tool identifiers with fixed coarse labels. `formatAnalysis` accepts only an analysis returned by `analyzeTraces`. This prevents a caller-built object from injecting arbitrary scalar values into model text.
+
+Report text is human-facing output. Do not parse it. Wording, whitespace, and display limits can change in a compatible release. Use the structured analysis for integrations.
+
+## Privacy and performance contract
+
+The root import and all Core v1 functions are synchronous. They do not read files or use the network.
+
+Raw tool inputs use bounded, process-keyed HMAC fingerprints. Equal fingerprints only indicate equal bounded canonical input in one process. They do not prove input equality. Do not use fingerprints as identities, secrets, cache keys, or cross-run metrics. Remote Export omits them.
+
+Classification handles cyclic, accessor-based, and proxy inputs conservatively. Result inspection reads at most 4,096 text characters and 256 content items. Fingerprinting has fixed depth, node, character, key, and array-item budgets.
+
+Large analyses run on the calling thread. Use a worker when a job can block an interactive process.
+
+## Versioning
+
+The package major is the Core interface major:
+
+- `pi-tooltime@1.x` means Core interface v1.
+- `TaskTrace.schemaVersion` versions serialized trace fields.
+- Guidance `policyVersion` identifies selected rule content.
+- The `h1:` prefix versions the Local Fingerprint format.
+
+These versions are independent. Record the exact package version or Git commit for reproducible evaluations because detector behavior can improve during a major line.
+
+Before package version 1.0.0, this interface remains a release candidate. After 1.0.0, removals, required parameters, incompatible defaults, closed-vocabulary changes, and lifecycle changes require a new package major.

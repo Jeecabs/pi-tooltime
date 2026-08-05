@@ -1,5 +1,5 @@
 import { getAgentDir, } from "@earendil-works/pi-coding-agent";
-import { analyzeTraces, recentTraces } from "./core/analyze.js";
+import { analyzeTaskTraces, recentTraces } from "./core/analyze.js";
 import { classifyTaskIntent, classifyToolCall, classifyToolResult } from "./core/classify.js";
 import { buildGuidancePrompt } from "./core/guidance.js";
 import { TaskRecorder } from "./core/recorder.js";
@@ -159,7 +159,7 @@ export default function registerTooltime(pi) {
     async function report(ctx, scope, days) {
         const traces = filterReportTraces(await currentHistory(), scope, ctx.sessionManager.getSessionId(), days);
         const suffix = scope === "session" ? "session" : days ? `${days}d` : "project";
-        return { text: formatTraceAnalysis(analyzeTraces(traces), `Tooltime report · ${suffix}`), traces };
+        return { text: formatTraceAnalysis(analyzeTaskTraces(traces), `Tooltime report · ${suffix}`), traces };
     }
     const commandUsage = "Usage: /tooltime status|mode off|analytics|coach|report [session|project|Nd]|analyze [session|project|Nd]|findings|prompt|reload";
     const showStatus = async (_args, ctx) => {
@@ -225,7 +225,7 @@ export default function registerTooltime(pi) {
             "Distinguish measured facts from suspected waste.",
             "Recommend at most three concrete tool-use changes that can reduce task time without reducing verification quality.",
             "",
-            formatTraceAnalysisForModel(analyzeTraces(result.traces), `Tooltime report · ${suffix}`),
+            formatTraceAnalysisForModel(analyzeTaskTraces(result.traces), `Tooltime report · ${suffix}`),
         ].join("\n");
         pendingAnalysisPrompt = prompt;
         try {
@@ -237,7 +237,7 @@ export default function registerTooltime(pi) {
         }
     };
     const showFindings = async (_args, ctx) => {
-        notify(ctx, formatFindingCandidates(analyzeTraces(await currentHistory()), config));
+        notify(ctx, formatFindingCandidates(analyzeTaskTraces(await currentHistory()), config));
     };
     const showPrompt = async (_args, ctx) => {
         const guidance = buildGuidancePrompt(await currentHistory(), config);

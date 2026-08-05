@@ -1,6 +1,5 @@
-import { type GuidanceOptions } from "./guidance.ts";
-import type { TraceAnalysis } from "./types.ts";
-export declare function formatDuration(ms: number): string;
+import { type GuidanceOptions } from "./guidance.js";
+import type { TraceAnalysis } from "./types.js";
 export declare function formatTraceAnalysis(analysis: TraceAnalysis, title?: string): string;
 export declare function formatTraceAnalysisForModel(analysis: TraceAnalysis, title?: string): string;
 export declare function formatFindingCandidates(analysis: TraceAnalysis, options: GuidanceOptions): string;

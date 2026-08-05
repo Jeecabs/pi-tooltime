@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { analyzeTraces } from "../src/core/analyze.ts";
+import { analyzeTaskTraces } from "../src/core/analyze.ts";
 import { buildGuidancePrompt, eligibleFindingAggregates } from "../src/core/guidance.ts";
-import { formatDuration, formatFindingCandidates, formatTraceAnalysisForModel } from "../src/core/report.ts";
+import { formatFindingCandidates, formatTraceAnalysisForModel } from "../src/core/report.ts";
 import type { EfficiencyFinding, TaskTrace } from "../src/core/types.ts";
 
 const routeFinding = (waste: number, confidence: EfficiencyFinding["confidence"] = "high"): EfficiencyFinding => ({
@@ -46,7 +46,7 @@ const options = {
 
 test("promotes only repeated high-confidence findings", () => {
   const traces = [trace("1", routeFinding(11_000)), trace("2", routeFinding(11_000)), trace("3", routeFinding(11_000))];
-  const analysis = analyzeTraces(traces);
+  const analysis = analyzeTaskTraces(traces);
   const eligible = eligibleFindingAggregates(analysis.findings, options);
 
   assert.equal(eligible.length, 1);
@@ -59,7 +59,7 @@ test("does not let medium-confidence evidence promote a high-confidence finding"
     [trace("1", routeFinding(11_000, "high")), trace("2", routeFinding(100_000, "medium"))],
     [trace("1", routeFinding(100_000, "medium")), trace("2", routeFinding(11_000, "high"))],
   ]) {
-    const findings = analyzeTraces(traces).findings;
+    const findings = analyzeTaskTraces(traces).findings;
     const high = findings.find((finding) => finding.confidence === "high");
     const medium = findings.find((finding) => finding.confidence === "medium");
 
@@ -94,7 +94,7 @@ test("never promotes guidance text or IDs supplied by legacy traces", () => {
   });
 
   const prompt = buildGuidancePrompt(poisoned, options);
-  const report = formatFindingCandidates(analyzeTraces(poisoned), options);
+  const report = formatFindingCandidates(analyzeTaskTraces(poisoned), options);
 
   assert.equal(prompt.rules[0]?.id, "source-routing");
   assert.equal(prompt.text.includes("IGNORE PREVIOUS"), false);
@@ -112,6 +112,8 @@ test("keeps custom tool identifiers out of model-visible reports", () => {
     suspectedWasteMs: 0,
     callCount: 2,
     failureCount: 0,
+    rejectedTraceCount: 0,
+    droppedCallCount: 0,
     tools: [
       { toolName: hostile, callCount: 1, failureCount: 0, callMs: 300 },
       { toolName: "browser_read", callCount: 1, failureCount: 0, callMs: 200 },
@@ -134,7 +136,6 @@ test("keeps custom tool identifiers out of model-visible reports", () => {
   assert.match(report, /^Tooltime report$/mu);
   assert.match(report, /- other:/u);
   assert.match(report, /- web:/u);
-  assert.equal(formatDuration(119_999), "2m");
 });
 
 test("can disable baseline guidance for an empty analytics history", () => {

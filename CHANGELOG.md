@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Ver
 
 ## [Unreleased]
 
+### Changed
+
+- Replaced the package-root wildcard barrel with the curated Core v1 candidate.
+- Added a strict raw-event task recorder, trace decoding diagnostics, deeply frozen outputs, audience-explicit formatting, and rejected-trace accounting.
+- Made finding task aggregation independent of caller-supplied task ID uniqueness.
+- Made Core ordering independent of host locale and removed quadratic mutation-barrier scans from finding detection.
+- Moved type checking and declaration builds to the locked TypeScript 7 native compiler (`tsgo`).
+
 ## [0.1.0] - 2026-08-05
 
 ### Added

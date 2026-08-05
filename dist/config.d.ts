@@ -1,5 +1,5 @@
-import type { DetectionOptions, TooltimeMode } from "./core/types.ts";
-import type { GuidanceOptions } from "./core/guidance.ts";
+import type { DetectionOptions, TooltimeMode } from "./core/types.js";
+import type { GuidanceOptions } from "./core/guidance.js";
 export interface RemoteTooltimeConfig {
     enabled: boolean;
     endpoint?: string;

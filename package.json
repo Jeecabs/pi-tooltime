@@ -48,12 +48,14 @@
     ]
   },
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.build.json",
-    "check": "tsc --noEmit",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsgo -p tsconfig.build.json && node scripts/rewrite-declarations.mjs",
+    "check": "tsgo --noEmit -p tsconfig.json",
     "test": "node --test --experimental-strip-types tests/*.test.ts",
     "prepack": "npm run build",
+    "core:contract": "node scripts/verify-core-api.mjs",
+    "lint:package": "publint --strict && attw --pack . --profile esm-only --entrypoints . ./extension --quiet",
     "pack:check": "npm pack --dry-run --ignore-scripts",
-    "verify": "pnpm check && pnpm test && pnpm build && pnpm pack:check"
+    "verify": "pnpm check && pnpm test && pnpm build && pnpm core:contract && pnpm lint:package && pnpm pack:check"
   },
   "engines": {
     "node": ">=22.19.0"
@@ -67,9 +69,11 @@
     }
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@earendil-works/pi-coding-agent": "^0.83.0",
-    "@types/node": "^24.3.0",
-    "typescript": "^5.9.2"
+    "@types/node": "^22.20.1",
+    "@typescript/native-preview": "7.0.0-dev.20260707.2",
+    "publint": "^0.3.23"
   },
   "pnpm": {
     "overrides": {

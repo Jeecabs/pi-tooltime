@@ -30,8 +30,9 @@ export class TaskRecorder {
         this.intent = options.intent;
         this.policyVersion = options.policyVersion;
         this.injectedRuleIds = [...new Set((options.injectedRuleIds ?? []).map(normalizeGuidanceId).filter((id) => id !== undefined))];
-        this.detection = options.detection;
-        this.maxCalls = Math.max(1, options.maxCalls ?? 500);
+        this.detection = { slowCallMs: options.detection.slowCallMs };
+        const maxCalls = options.maxCalls ?? 500;
+        this.maxCalls = Number.isSafeInteger(maxCalls) && maxCalls > 0 ? Math.min(maxCalls, 5_000) : 500;
         this.now = options.now ?? (() => performance.now());
         this.wallNow = options.wallNow ?? (() => new Date());
         this.startedMs = this.now();
@@ -43,11 +44,12 @@ export class TaskRecorder {
         if (this.active.has(toolCallId)) {
             this.finishTool(toolCallId, { isError: true, resultKind: "error" });
         }
+        const startedMs = this.now();
         this.sequence++;
         this.active.set(toolCallId, {
             classification: sanitizeClassification(classification),
             sequence: this.sequence,
-            startedMs: this.now(),
+            startedMs,
         });
     }
     updateTool(toolCallId, classification) {
@@ -62,8 +64,9 @@ export class TaskRecorder {
         const active = this.active.get(toolCallId);
         if (!active)
             return;
+        const completedMs = this.now();
         this.active.delete(toolCallId);
-        this.complete(active, input, this.now());
+        this.complete(active, input, completedMs);
     }
     complete(active, input, completedMs) {
         const startOffsetMs = Math.max(0, active.startedMs - this.startedMs);
@@ -88,14 +91,14 @@ export class TaskRecorder {
         if (this.trace)
             return this.trace;
         const completedMs = this.now();
+        const completedAt = this.wallNow();
         for (const active of this.active.values()) {
             this.complete(active, { isError: true, resultKind: "error" }, completedMs);
         }
         this.active.clear();
         const calls = [...this.calls].sort((a, b) => a.sequence - b.sequence);
         const findings = detectEfficiencyFindings(calls, this.intent, this.detection);
-        const completedAt = this.wallNow();
-        this.trace = {
+        const trace = {
             schemaVersion: 1,
             taskId: this.taskId,
             sessionId: this.sessionId,
@@ -114,6 +117,7 @@ export class TaskRecorder {
             findings,
             droppedCallCount: this.droppedCallCount,
         };
-        return this.trace;
+        this.trace = trace;
+        return trace;
     }
 }

@@ -1,10 +1,10 @@
-import type { ClassifiedToolCall, DetectionOptions, TaskIntent, TaskOutcome, TaskTrace, ToolResultKind, TooltimeMode } from "./types.ts";
+import type { ClassifiedToolCall, DetectionOptions, TaskIntent, TaskOutcome, TaskTrace, ToolResultKind, TooltimeMode } from "./types.js";
 export interface TaskRecorderOptions {
     sessionId: string;
     mode: TooltimeMode;
     intent?: TaskIntent;
     policyVersion?: string;
-    injectedRuleIds?: string[];
+    injectedRuleIds?: readonly string[];
     detection: DetectionOptions;
     maxCalls?: number;
     taskId?: string;

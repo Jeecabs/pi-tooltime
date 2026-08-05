@@ -16,6 +16,8 @@ You need:
 - pnpm 10.28.2.
 - Pi 0.83.0 or later for extension smoke tests.
 
+`pnpm check` and `pnpm build` use the locked TypeScript 7 native compiler (`tsgo`).
+
 Install the locked dependencies and build the package:
 
 ```bash
