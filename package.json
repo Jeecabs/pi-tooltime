@@ -1,0 +1,79 @@
+{
+  "name": "pi-tooltime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.28.2",
+  "description": "Pi tool-time analytics and prompt coaching.",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jeecabs/pi-tooltime.git"
+  },
+  "homepage": "https://github.com/Jeecabs/pi-tooltime#readme",
+  "bugs": {
+    "url": "https://github.com/Jeecabs/pi-tooltime/issues"
+  },
+  "main": "./dist/core/index.js",
+  "types": "./dist/core/index.d.ts",
+  "files": [
+    "dist",
+    "docs",
+    "README.md",
+    "CHANGELOG.md",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "SUPPORT.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
+    },
+    "./extension": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "tool-analytics",
+    "agent-evals"
+  ],
+  "pi": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.build.json",
+    "check": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types tests/*.test.ts",
+    "prepack": "npm run build",
+    "pack:check": "npm pack --dry-run --ignore-scripts",
+    "verify": "pnpm check && pnpm test && pnpm build && pnpm pack:check"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.83.0",
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "undici": "8.10.0"
+    }
+  }
+}

@@ -1,0 +1,83 @@
+name: Bug report
+description: Report a reproducible problem in Pi Tooltime.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include secrets, raw prompts, tool payloads, tool output, file contents, database rows, or project paths.
+        Use synthetic values. Report security or privacy vulnerabilities through **Security > Report a vulnerability** instead.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you report
+      options:
+        - label: I searched existing issues for this problem.
+          required: true
+        - label: I tested a supported Pi Tooltime version.
+          required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem
+      description: Describe what happened and why it is a problem.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Give sanitized steps and synthetic sample data.
+      placeholder: |
+        1. Set the mode to ...
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Active mode
+      options:
+        - "off"
+        - analytics
+        - coach
+        - Unknown or not applicable
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Pi Tooltime version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Give sanitized Node.js, Pi, and operating system versions.
+      placeholder: Node.js 22.19, Pi version, macOS, Linux, or Windows version
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Sanitized diagnostics
+      description: Share only metadata needed to diagnose the problem.
+      render: text
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed secrets, raw prompts, tool payloads, tool output, file contents, database rows, and project paths.
+          required: true

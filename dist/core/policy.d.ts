@@ -1,0 +1,17 @@
+import type { EfficiencyFindingCode, GuidanceId, ToolFamily, ToolName, ToolOperation, ToolResultKind, ToolScope } from "./types.ts";
+export declare const TOOL_FAMILIES: readonly ["repository", "web", "database", "issues", "process", "test", "shell", "other"];
+export declare const TOOL_OPERATIONS: readonly ["read", "search", "analyze", "mutate", "interact", "query", "request", "command", "test-targeted", "test-full", "report", "unknown"];
+export declare const TOOL_SCOPES: readonly ["targeted", "project", "outside", "root", "full", "unknown"];
+export declare const TOOL_RESULT_KINDS: readonly ["nonempty", "empty", "error", "unknown"];
+export declare const FINDING_CODES: readonly ["repeat.expensive-identical", "test.full-suite-loop", "search.broad-scope", "search.slow-empty", "route.explicit-web-local-search", "route.explicit-database-local-search", "route.explicit-repository-database-query"];
+export declare const GUIDANCE_IDS: readonly ["avoid-repeat", "targeted-validation", "target-first", "reassess-after-empty", "source-routing"];
+export declare const GUIDANCE_REGISTRY: Readonly<Record<GuidanceId, string>>;
+export declare function normalizeToolFamily(value: unknown): ToolFamily;
+export declare function normalizeToolName(value: unknown, family?: ToolFamily): ToolName;
+export declare function normalizeToolOperation(value: unknown): ToolOperation;
+export declare function normalizeToolScope(value: unknown): ToolScope | undefined;
+export declare function normalizeToolResultKind(value: unknown): ToolResultKind;
+export declare function normalizeFindingCode(value: unknown): EfficiencyFindingCode | undefined;
+export declare function normalizeGuidanceId(value: unknown): GuidanceId | undefined;
+export declare function guidanceFor(id: GuidanceId): string;
+export declare function guidanceIdForFinding(code: EfficiencyFindingCode): GuidanceId;

@@ -1,0 +1,45 @@
+name: Question
+description: Ask for help with Pi Tooltime setup or use.
+title: "question: "
+labels:
+  - question
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Read README.md and SUPPORT.md before you ask a question.
+        Do not include secrets, raw prompts, tool payloads, tool output, file contents, database rows, or project paths.
+        Report security or privacy vulnerabilities through **Security > Report a vulnerability** instead.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you ask
+      options:
+        - label: I searched existing issues and project documentation.
+          required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: State the result that you need and the obstacle.
+    validations:
+      required: true
+  - type: textarea
+    id: attempted
+    attributes:
+      label: What you tried
+      description: Give sanitized steps and synthetic values.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Pi Tooltime version
+      placeholder: 0.1.0
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed secrets, raw prompts, tool payloads, tool output, file contents, database rows, and project paths.
+          required: true

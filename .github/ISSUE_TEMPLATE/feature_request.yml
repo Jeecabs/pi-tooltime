@@ -1,0 +1,66 @@
+name: Feature request
+description: Propose an improvement to Pi Tooltime.
+title: "feature: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include secrets, raw prompts, tool payloads, tool output, file contents, database rows, or project paths.
+        Use synthetic examples. Report security or privacy vulnerabilities through **Security > Report a vulnerability** instead.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you request
+      options:
+        - label: I searched existing issues for this request.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the user need or limitation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the result, not only one implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Describe other solutions that you considered.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Analytics and reports
+        - Efficiency Findings
+        - Coach Mode and Guidance Rules
+        - Local storage
+        - Remote Export
+        - Configuration
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Privacy effect
+      description: Explain effects on collection, storage, redaction, consent, retention, or Remote Export.
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy-check
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed secrets, raw prompts, tool payloads, tool output, file contents, database rows, and project paths.
+          required: true
