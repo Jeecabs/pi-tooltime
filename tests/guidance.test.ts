@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { analyzeTaskTraces } from "../src/core/analyze.ts";
@@ -43,6 +44,20 @@ const options = {
   maxPromptRules: 3,
   includeBaselineGuidance: true,
 };
+
+test("keeps documented default coach insertion exact", () => {
+  const prompt = buildGuidancePrompt([], options);
+  const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
+  const page = readFileSync(new URL("../docs/index.html", import.meta.url), "utf8");
+  const readmeExample = /### What Coach Mode inserts[\s\S]*?```text\n([\s\S]*?)\n```/u.exec(readme)?.[1];
+  const pageExample = /<span class="t amber">System prompt suffix<\/span>[\s\S]*?<pre>([\s\S]*?)<\/pre>/u
+    .exec(page)?.[1]
+    ?.replace(/<[^>]+>/gu, "");
+
+  assert.equal(readmeExample, prompt.text);
+  assert.equal(pageExample, prompt.text);
+  assert.match(page, new RegExp(`default · ${prompt.text.length} chars`, "u"));
+});
 
 test("promotes only repeated high-confidence findings", () => {
   const traces = [trace("1", routeFinding(11_000)), trace("2", routeFinding(11_000)), trace("3", routeFinding(11_000))];
