@@ -337,8 +337,8 @@ gh api "repos/Jeecabs/pi-tooltime/rulesets/$tag_ruleset_id" --jq '
   .conditions.ref_name.include == ["refs/tags/v*"] and
   .conditions.ref_name.exclude == [] and
   ([.rules[].type] | sort) == ["deletion", "non_fast_forward", "update"] and
-  ((.rules[] | select(.type == "update") | .parameters.update_allows_fetch_and_merge) == false) and
-  (.bypass_actors | length) == 0
+  (.bypass_actors | length) == 0 and
+  .current_user_can_bypass == "never"
 '
 ```
 
