@@ -89,6 +89,19 @@ This sample is illustrative. A finding is evidence, not proof that work was avoi
 
 Coach mode appends at most the configured number of fixed Guidance Rules. It does not block or rewrite tool calls. Observed guidance requires repeated, high-confidence findings that meet both promotion thresholds.
 
+### What Coach Mode inserts
+
+With default settings, Pi Tooltime appends this 346-character suffix to the existing Pi system prompt before each task. This initial example applies when no observed guidance qualifies:
+
+```text
+Tool economy:
+- Match the tool to the source: repository facts → find/grep/read; current public docs → browser_read; live state → database tools.
+- Use targeted searches and tests while iterating. Broaden only after evidence, and run full suites near handoff.
+- After two empty or repeated calls, stop and change the source, scope, or hypothesis.
+```
+
+Repeated high-confidence findings can replace baseline lines with other fixed registry lines. Defaults limit the suffix to three rules and 500 characters. It never includes captured prompts, tool inputs, results, paths, fingerprints, or timing metrics. Run `/tooltime prompt` to preview the exact current suffix before the next task.
+
 Select a mode for the current Pi session:
 
 ```text

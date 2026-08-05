@@ -191,6 +191,9 @@ a.card:hover{background:var(--bg-sunk)}
 
 .two-col{display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:start}
 @media (max-width:860px){.two-col{grid-template-columns:1fr}}
+.coach-example{gap:18px; margin-top:24px}
+.coach-example .def{height:100%; margin-bottom:0}
+.coach-example .term pre{white-space:pre-wrap; overflow-wrap:anywhere}
 .def{background:var(--bg-raise); border:1px solid var(--border); border-radius:6px; padding:16px 20px; margin-bottom:14px}
 .def p{color:var(--fg-2); font-size:13.5px; margin-top:8px}
 .rule{background:var(--bg-raise); border:1px solid var(--border); border-radius:6px; padding:16px 20px; margin-top:18px; font-size:13.5px; color:var(--fg-2)}
@@ -386,6 +389,21 @@ suspected avoidable wall: <span class="g">28s</span>
           <td>After findings repeat. Appends at most the configured number of fixed rules, never blocks a call.</td>
         </tr>
       </table>
+    </div>
+    <div class="two-col coach-example">
+      <div class="def">
+        <b>Exact default insertion</b>
+        <p>With Coach Mode enabled, Tooltime appends this fixed suffix to the existing Pi system prompt before each task. This initial example applies when no observed guidance qualifies.</p>
+        <p>Repeated high-confidence findings can replace baseline lines with other fixed registry lines. The default bound is three rules and 500 characters.</p>
+        <p><code>/tooltime prompt</code> previews the exact current suffix. Captured prompts, tool inputs, results, paths, fingerprints, and timing metrics never enter it.</p>
+      </div>
+      <div class="term">
+        <div class="term-bar"><span class="t amber">System prompt suffix</span><span class="d">default · 346 chars</span></div>
+        <pre><span class="g">Tool economy:</span>
+- Match the tool to the source: repository facts → find/grep/read; current public docs → browser_read; live state → database tools.
+- Use targeted searches and tests while iterating. Broaden only after evidence, and run full suites near handoff.
+- After two empty or repeated calls, stop and change the source, scope, or hypothesis.</pre>
+      </div>
     </div>
     <div class="rule">
       <b>Precedence.</b> Built-in defaults, then user-global config, then trusted project config,
