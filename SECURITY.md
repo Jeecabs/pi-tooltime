@@ -2,11 +2,11 @@
 
 ## Supported versions
 
-Security fixes target the latest release in the 1.x series, including the current release candidate.
+Security fixes target the latest release in the 1.x series.
 
 | Version | Supported |
 | --- | --- |
-| Latest 1.x release or release candidate | Yes |
+| Latest 1.x release | Yes |
 | Older releases and unreleased commits | No support commitment |
 
 Upgrade to the latest release before you report a problem when it is safe to do so.

@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/Jeecabs/pi-tooltime/actions/workflows/ci.yml/badge.svg)](https://github.com/Jeecabs/pi-tooltime/actions/workflows/ci.yml)
 
+[Website](https://jeecabs.github.io/pi-tooltime/) · [Core API](docs/core-api.md) · [Data and privacy](docs/data-and-privacy.md)
+
 Pi Tooltime is a [Pi](https://github.com/earendil-works/pi) extension for local tool-time analytics and optional prompt coaching. It measures tool occupancy for each task. It also detects fixed patterns that might indicate avoidable work.
 
 Local analytics are on by default. Coach mode is a separate opt-in. Remote Export stays off until the user enables it.
@@ -18,13 +20,13 @@ Pi Tooltime inspects task prompts, tool inputs, and tool results in memory. It p
 
 ## Install
 
-Install the pinned v1.0.0-rc.1 release candidate:
+Install the pinned stable v1.0.0 release:
 
 ```bash
-pi install git:github.com/Jeecabs/pi-tooltime@v1.0.0-rc.1
+pi install git:github.com/Jeecabs/pi-tooltime@v1.0.0
 ```
 
-This is a prerelease. Pin the exact tag and review the changelog before an upgrade.
+Pin the exact tag and review the changelog before an upgrade.
 
 Package update commands keep this ref pinned. They can reset its checkout to the selected ref, but they do not select a newer release.
 
@@ -166,7 +168,7 @@ Restart Pi or run `/reload` after the checkout changes.
 
 The package includes compiled JavaScript and declarations in `dist/`. Eval harnesses can use the Pi-independent Node.js core without loading the extension.
 
-See [Core API](docs/core-api.md) for the curated v1-candidate interface, lifecycle contract, decoding rules, optional peer behavior, and stability policy.
+See [Core API](docs/core-api.md) for the stable Core v1 interface and lifecycle contract. It also defines decoding, optional peer behavior, and compatibility.
 
 ## Architecture
 
@@ -195,21 +197,25 @@ pi -e .
 - [Security policy](SECURITY.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 
+## License
+
+Pi Tooltime uses the `MIT` License. See [LICENSE](LICENSE).
+
 ## Uninstall and delete data
 
 Use the same package source that appears in `pi list`. For the pinned global install above, run:
 
 ```bash
-pi remove git:github.com/Jeecabs/pi-tooltime@v1.0.0-rc.1
+pi remove git:github.com/Jeecabs/pi-tooltime@v1.0.0
 ```
 
 For a project-local install, include both the source and `-l`:
 
 ```bash
-pi remove git:github.com/Jeecabs/pi-tooltime@v1.0.0-rc.1 -l
+pi remove git:github.com/Jeecabs/pi-tooltime@v1.0.0 -l
 ```
 
-Omit `@v1.0.0-rc.1` if you installed the unpinned source. Restart Pi or run `/reload` after removal.
+Omit `@v1.0.0` if you installed the unpinned source. Restart Pi or run `/reload` after removal.
 
 The remove command does not delete analytics or config. Stop all Pi processes before the next commands. They permanently delete local Tooltime data and user-global Tooltime config.
 

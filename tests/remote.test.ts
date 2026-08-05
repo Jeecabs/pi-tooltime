@@ -56,7 +56,7 @@ test("sends only the redacted trace envelope with an environment token", async (
   assert.equal(requests.length, 1);
   assert.equal(requests[0]?.url, "https://telemetry.example.com/pi");
   assert.equal(requests[0]?.headers.Authorization, "Bearer token-value");
-  assert.equal(requests[0]?.headers["User-Agent"], "pi-tooltime/1.0.0-rc.1");
+  assert.equal(requests[0]?.headers["User-Agent"], "pi-tooltime/1.0.0");
   assert.equal(exporter?.status().endpoint, "https://telemetry.example.com");
   assert.equal(requests[0]?.body.includes("token-value"), false);
   assert.equal(requests[0]?.redirect, "error");

@@ -23,7 +23,7 @@ document.documentElement.dataset.theme =
 <style>
 :root{
   --bg-outer:#F0EEEE; --bg:#FAFAF9; --bg-raise:#FFFFFF; --bg-sunk:#F0EEEE;
-  --fg:#292623; --fg-2:#595654; --fg-3:#737373;
+  --fg:#292623; --fg-2:#595654; --fg-3:#6B6765;
   --tag:#008566; --tag-wash:#ECFDF5;
   --link:#C24C0A;
   --border:#DEDBD8; --border-strong:#C8C4C1;
@@ -50,6 +50,7 @@ body{
 }
 ::selection{background:var(--tag); color:var(--bg)}
 a{color:inherit; text-decoration:none}
+a:focus-visible, button:focus-visible, .table-scroll:focus-visible{outline:2px solid var(--tag); outline-offset:3px}
 .frame{max-width:1160px; margin:0 auto; background:var(--bg); border-left:1px solid var(--border); border-right:1px solid var(--border); min-height:100vh}
 .wrap{padding:0 48px}
 @media (max-width:720px){.wrap{padding:0 20px}}
@@ -84,6 +85,7 @@ nav .links a:hover, nav .links a.active{color:var(--fg)}
   border:1px solid var(--tag); border-radius:4px; padding:1px 7px; white-space:nowrap;
 }
 .tag.amber{color:var(--link); border-color:var(--link)}
+.tag.green{color:var(--tag); border-color:var(--tag)}
 .tag.dim{color:var(--fg-3); border-color:var(--border-strong)}
 
 /* ---- status strip ---- */
@@ -122,8 +124,8 @@ h1{
   letter-spacing:.04em; color:var(--fg-3);
 }
 .cost{margin-top:10px; color:var(--fg-2); max-width:66ch}
-.cost a, p a, li a, td a{color:var(--link)}
-.cost a:hover, p a:hover, li a:hover, td a:hover{text-decoration:underline}
+.cost a, p a, li a, td a{color:var(--link); text-decoration:underline; text-underline-offset:3px}
+.cost a:hover, p a:hover, li a:hover, td a:hover{text-decoration-thickness:2px}
 .note{font-size:13px; color:var(--fg-3); max-width:70ch}
 .facts{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:6px; overflow:hidden; margin-top:40px}
 .fact{background:var(--bg-raise); padding:16px 20px}
@@ -234,8 +236,8 @@ footer .links a:hover{color:var(--fg)}
 <div class="ticker">
   <div class="wrap">
     <span class="date">08/05/2026</span>
-    <span class="tag amber">RC</span>
-    <span class="item"><span class="ver">v1.0.0-rc.1</span> is pinned for install. The interface can change before 1.0.0, so pin the exact tag.</span>
+    <span class="tag green">Stable</span>
+    <span class="item"><span class="ver">v1.0.0</span> is the stable Core v1 release. Pin the exact tag for reproducible installs.</span>
     <a class="link more" href="https://github.com/Jeecabs/pi-tooltime/blob/main/CHANGELOG.md">Changelog ↗</a>
   </div>
 </div>
@@ -249,7 +251,7 @@ footer .links a:hover{color:var(--fg)}
     </p>
     <div class="install reveal" style="animation-delay:.18s">
       <span class="p">$</span>
-      <span class="cmd">pi install git:github.com/Jeecabs/pi-tooltime@<span class="ver">v1.0.0-rc.1</span></span>
+      <span class="cmd">pi install git:github.com/Jeecabs/pi-tooltime@<span class="ver">v1.0.0</span></span>
       <button onclick="copyCmd(this)" aria-live="polite">Copy</button>
     </div>
     <p class="req reveal" style="animation-delay:.22s">Pi 0.83.0+, Node.js 22.19.0+, installed from Git, not npm</p>
@@ -347,7 +349,7 @@ suspected avoidable wall: <span class="g">28s</span>
         <p>The sum of all Tool Spans. Parallel calls can push this past Task Wall Time. Use it to inspect aggregate tool work.</p>
       </div>
     </div>
-    <div class="table-scroll">
+    <div class="table-scroll" role="region" aria-label="Efficiency finding codes" tabindex="0">
       <table>
         <tr><th>Finding code</th><th>Trigger</th><th>Confidence</th></tr>
         <tr><td><code>repeat.expensive-identical</code></td><td>A repeated nonmutating fingerprint passes the duration threshold, with no mutation between calls.</td><td>High</td></tr>
@@ -368,7 +370,7 @@ suspected avoidable wall: <span class="g">28s</span>
   <div class="wrap">
     <h2>Modes</h2>
     <p class="sec-sub">Analytics is the default. Coach is the opt-in. Off pauses capture and keeps your existing data.</p>
-    <div class="table-scroll">
+    <div class="table-scroll" role="region" aria-label="Tooltime modes" tabindex="0">
       <table>
         <tr><th>Mode</th><th>Records traces</th><th>Changes system prompt</th><th>Use when</th></tr>
         <tr>
@@ -399,7 +401,7 @@ suspected avoidable wall: <span class="g">28s</span>
 <section id="commands">
   <div class="wrap">
     <h2>Commands</h2>
-    <div class="table-scroll">
+    <div class="table-scroll" role="region" aria-label="Tooltime commands" tabindex="0">
       <table>
         <tr><th>Command</th><th>Result</th><th>Kind</th></tr>
         <tr><td><code>/tooltime</code> or <code>/tooltime status</code></td><td>Show mode, config sources, storage, promotion thresholds, and Remote Export status.</td><td class="no">notification</td></tr>
@@ -444,7 +446,7 @@ suspected avoidable wall: <span class="g">28s</span>
       </div>
     </div>
     <div class="rule">
-      <b>Remove it.</b> <code>pi remove git:github.com/Jeecabs/pi-tooltime@v1.0.0-rc.1</code>
+      <b>Remove it.</b> <code>pi remove git:github.com/Jeecabs/pi-tooltime@v1.0.0</code>
       (add <code>-l</code> for a project-local install). Remove does not delete analytics or
       config; the <a href="https://github.com/Jeecabs/pi-tooltime#uninstall-and-delete-data">README</a>
       has the full deletion steps.
@@ -459,7 +461,7 @@ suspected avoidable wall: <span class="g">28s</span>
     <p class="sec-sub">The package root is a Pi-independent Node.js core for eval harnesses. It registers no extension, writes no files, and makes no network requests.</p>
     <div class="two-col">
       <div>
-        <div class="table-scroll">
+        <div class="table-scroll" role="region" aria-label="Package exports" tabindex="0">
           <table>
             <tr><th>Export</th><th>Target</th></tr>
             <tr><td><code>pi-tooltime</code></td><td>Pi-independent Core v1 interface</td></tr>
@@ -467,7 +469,7 @@ suspected avoidable wall: <span class="g">28s</span>
           </table>
         </div>
         <p class="tfoot">Node.js 22.19.0+, ESM only, installed as a pinned Git dependency.
-        The interface can change before the stable 1.0.0 release.</p>
+        Core v1 remains compatible throughout the 1.x package line.</p>
       </div>
       <div class="term">
         <div class="term-bar"><span class="t">Core</span><span class="d">record one task</span></div>
@@ -512,7 +514,7 @@ console.log(formatAnalysis(analysis,
     </div>
     <p class="group-label">Build on it</p>
     <div class="grid">
-      <a class="card" href="https://github.com/Jeecabs/pi-tooltime/blob/main/docs/core-api.md"><b>Core API</b><p>The curated v1-candidate interface, lifecycle contract, and stability policy.</p><span class="go link">Read ↗</span></a>
+      <a class="card" href="https://github.com/Jeecabs/pi-tooltime/blob/main/docs/core-api.md"><b>Core API</b><p>The curated Core v1 interface, lifecycle contract, and stability policy.</p><span class="go link">Read ↗</span></a>
       <a class="card" href="https://github.com/Jeecabs/pi-tooltime/blob/main/docs/architecture.md"><b>Architecture</b><p>Event ordering, trace boundaries, promotion, and eval use.</p><span class="go link">Read ↗</span></a>
       <a class="card" href="https://github.com/Jeecabs/pi-tooltime/blob/main/CONTRIBUTING.md"><b>Contributing</b><p>Development workflow, verification, and project policy.</p><span class="go link">Read ↗</span></a>
     </div>
@@ -522,7 +524,7 @@ console.log(formatAnalysis(analysis,
 <footer>
   <div class="wrap">
     <p class="fine">
-      <span class="ver">v1.0.0-rc.1</span><br>
+      <span class="ver">v1.0.0</span><br>
       Pi Tooltime inspects task prompts, tool inputs, and tool results in memory, and persists
       only allowlisted analytics fields.
     </p>
@@ -530,6 +532,7 @@ console.log(formatAnalysis(analysis,
       <a href="https://github.com/Jeecabs/pi-tooltime">GitHub</a>
       <a href="https://github.com/Jeecabs/pi-tooltime/blob/main/CHANGELOG.md">Changelog</a>
       <a href="https://github.com/Jeecabs/pi-tooltime/blob/main/SUPPORT.md">Support</a>
+      <a href="https://github.com/Jeecabs/pi-tooltime/blob/main/LICENSE">MIT License</a>
       <a href="https://github.com/Jeecabs/pi-tooltime/issues">Issues</a>
     </div>
   </div>
@@ -537,7 +540,7 @@ console.log(formatAnalysis(analysis,
 
 </div>
 <script>
-const VERSION = "1.0.0-rc.1";
+const VERSION = "1.0.0";
 document.querySelectorAll(".ver").forEach((el) => { el.textContent = "v" + VERSION; });
 
 const root = document.documentElement, btn = document.getElementById("theme-btn");

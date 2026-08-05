@@ -16,14 +16,14 @@ Complete this gate before any public release:
 
 Stop when ownership, redistribution rights, or license terms are unknown. Public source visibility does not replace this gate.
 
-This procedure does not select or state a project license.
+Pi Tooltime currently uses the MIT License. Change the license only through a separate owner-reviewed decision.
 
 ## 2. Select the version
 
 Set a shell variable for the release tag:
 
 ```bash
-export TAG=v1.0.0-rc.1
+export TAG=v1.0.0
 ```
 
 Make sure these values agree:
@@ -220,6 +220,7 @@ gh repo edit Jeecabs/pi-tooltime \
 
 gh repo edit Jeecabs/pi-tooltime \
   --description "Local-first tool-use analytics and coaching for Pi" \
+  --homepage "https://jeecabs.github.io/pi-tooltime/" \
   --enable-projects=false \
   --enable-wiki=false \
   --enable-merge-commit=false \
@@ -233,6 +234,15 @@ gh repo edit Jeecabs/pi-tooltime \
 
 gh repo edit Jeecabs/pi-tooltime --enable-secret-scanning
 gh repo edit Jeecabs/pi-tooltime --enable-secret-scanning-push-protection
+
+gh api --method POST repos/Jeecabs/pi-tooltime/pages --input - <<'JSON'
+{
+  "source": {
+    "branch": "main",
+    "path": "/docs"
+  }
+}
+JSON
 ```
 
 Enable confidential vulnerability reports, immutable releases, and required action SHA pins:
@@ -299,9 +309,10 @@ Verify the settings before tag creation:
 
 ```bash
 gh repo view Jeecabs/pi-tooltime \
-  --json visibility,mergeCommitAllowed,rebaseMergeAllowed,squashMergeAllowed \
-  --jq '.visibility == "PUBLIC" and (.mergeCommitAllowed | not) and (.rebaseMergeAllowed | not) and .squashMergeAllowed'
+  --json visibility,homepageUrl,mergeCommitAllowed,rebaseMergeAllowed,squashMergeAllowed \
+  --jq '.visibility == "PUBLIC" and .homepageUrl == "https://jeecabs.github.io/pi-tooltime/" and (.mergeCommitAllowed | not) and (.rebaseMergeAllowed | not) and .squashMergeAllowed'
 gh api repos/Jeecabs/pi-tooltime --jq '.security_and_analysis.secret_scanning.status == "enabled" and .security_and_analysis.secret_scanning_push_protection.status == "enabled"'
+gh api repos/Jeecabs/pi-tooltime/pages --jq '.html_url == "https://jeecabs.github.io/pi-tooltime/" and .source.branch == "main" and .source.path == "/docs"'
 gh api repos/Jeecabs/pi-tooltime/private-vulnerability-reporting --jq '.enabled == true'
 gh api repos/Jeecabs/pi-tooltime/immutable-releases --jq '.enabled == true'
 gh api repos/Jeecabs/pi-tooltime/actions/permissions --jq '.enabled == true and .sha_pinning_required == true'

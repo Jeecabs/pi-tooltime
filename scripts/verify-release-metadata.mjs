@@ -27,7 +27,7 @@ assert.equal(packageJson.peerDependencies?.["@earendil-works/pi-coding-agent"], 
 assert.equal(packageJson.author, "Lachlan Jacobs <lachlan.jacobs@protonmail.com>", "package author must use the approved identity");
 assert.equal(packageJson.repository?.url, "git+https://github.com/Jeecabs/pi-tooltime.git", "repository URL must target the canonical repository");
 assert.equal(packageJson.bugs?.url, "https://github.com/Jeecabs/pi-tooltime/issues", "bugs URL must target the canonical repository");
-assert.equal(packageJson.homepage, "https://github.com/Jeecabs/pi-tooltime#readme", "homepage must target the canonical README");
+assert.equal(packageJson.homepage, "https://jeecabs.github.io/pi-tooltime/", "homepage must target the canonical project site");
 assert.match(version, semver, "package version must use SemVer 2.0.0");
 
 assertLine("src/version.ts", `export const PACKAGE_VERSION = "${version}";`);

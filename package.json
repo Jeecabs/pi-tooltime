@@ -1,17 +1,17 @@
 {
   "name": "pi-tooltime",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.2",
   "description": "Pi tool-time analytics and prompt coaching.",
   "author": "Lachlan Jacobs <lachlan.jacobs@protonmail.com>",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Jeecabs/pi-tooltime.git"
   },
-  "homepage": "https://github.com/Jeecabs/pi-tooltime#readme",
+  "homepage": "https://jeecabs.github.io/pi-tooltime/",
   "bugs": {
     "url": "https://github.com/Jeecabs/pi-tooltime/issues"
   },

@@ -4,7 +4,7 @@
 
 Search existing issues before you propose a change. Open an issue before you start a large change.
 
-Review all current repository notices about contribution and redistribution. Do not assume that public visibility grants permission. Maintainers must complete the rights and license gate before a public release.
+Pi Tooltime uses the [MIT License](LICENSE). By submitting a contribution, you agree to license it under MIT. You also confirm that you have the right to do so.
 
 Follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 

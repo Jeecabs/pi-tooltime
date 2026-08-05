@@ -62,7 +62,7 @@ Headers:
 
 ```http
 Content-Type: application/json
-User-Agent: pi-tooltime/1.0.0-rc.1
+User-Agent: pi-tooltime/1.0.0
 Authorization: Bearer <PI_TOOLTIME_REMOTE_TOKEN>
 ```
 

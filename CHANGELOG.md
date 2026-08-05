@@ -6,7 +6,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Ver
 
 ## [Unreleased]
 
-## [1.0.0-rc.1] - 2026-08-05
+## [1.0.0] - 2026-08-05
 
 ### Added
 
@@ -16,7 +16,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Ver
 - Added fixed call classifications, fixed Result Kinds, and process-keyed `h1:` Local Fingerprints.
 - Added deterministic detectors for repeated calls, full-suite loops, broad searches, slow empty searches, and explicit source-routing mismatches.
 - Added bounded baseline and observed Guidance Rules with policy version fields.
-- Added the Pi-independent package-root Core v1 release candidate and compiled declarations.
+- Added the Pi-independent package-root Core v1 interface and compiled declarations.
 - Added a strict raw-event task recorder, trace-decoding diagnostics, frozen outputs, audience-explicit formatting, and rejected-trace accounting.
 - Added opt-in Remote Export with an explicit smaller trace schema.
 - Added project trust handling for project config. Pi Tooltime ignores project Remote Export values.
@@ -52,5 +52,5 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Ver
 - Added bounded pending remote requests, timeouts, no retries, and status-only failure reporting.
 - Added strict Core lifecycle errors, runtime input bounds, immutable result snapshots, and hostile-input containment.
 
-[Unreleased]: https://github.com/Jeecabs/pi-tooltime/compare/v1.0.0-rc.1...HEAD
-[1.0.0-rc.1]: https://github.com/Jeecabs/pi-tooltime/releases/tag/v1.0.0-rc.1
+[Unreleased]: https://github.com/Jeecabs/pi-tooltime/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Jeecabs/pi-tooltime/releases/tag/v1.0.0
