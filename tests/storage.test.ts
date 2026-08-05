@@ -227,6 +227,33 @@ test("physically removes expired traces from the active file during load", async
   assert.equal(await readFile(store.filePath, "utf8"), "");
 });
 
+test("preserves an append scheduled while active compaction is running", async (t) => {
+  const agentDir = await mkdtemp(join(tmpdir(), "pi-tooltime-store-"));
+  t.after(() => rm(agentDir, { recursive: true, force: true }));
+  const store = new TooltimeStore({
+    agentDir,
+    cwd: "/project",
+    sessionId: "session",
+    retentionDays: 1,
+    maxTasks: 100,
+    now: () => Date.parse("2026-01-10T00:00:00.000Z"),
+  });
+
+  store.schedule({ ...trace("expired"), completedAt: "2026-01-01T00:00:01.000Z" });
+  await store.flush();
+
+  const loading = store.load();
+  store.schedule({
+    ...trace("concurrent"),
+    startedAt: "2026-01-09T00:00:00.000Z",
+    completedAt: "2026-01-09T00:00:01.000Z",
+  });
+  await Promise.all([loading, store.flush()]);
+
+  assert.match(await readFile(store.filePath, "utf8"), /concurrent/u);
+  assert.deepEqual((await store.load()).map((item) => item.taskId), ["concurrent"]);
+});
+
 test("sanitizes hostile legacy classifications and guidance while compacting", async (t) => {
   const agentDir = await mkdtemp(join(tmpdir(), "pi-tooltime-store-"));
   t.after(() => rm(agentDir, { recursive: true, force: true }));

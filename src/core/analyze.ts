@@ -108,7 +108,10 @@ export function analyzeTaskTraces(traces: readonly TaskTrace[]): TraceAnalysis {
   }
 
   const findings = [...findingGroups.values()].sort((a, b) =>
-    b.totalWasteMs - a.totalWasteMs || b.taskCount - a.taskCount || compareText(a.code, b.code)
+    b.totalWasteMs - a.totalWasteMs
+    || b.taskCount - a.taskCount
+    || compareText(a.code, b.code)
+    || (a.confidence === b.confidence ? 0 : a.confidence === "high" ? -1 : 1)
   );
 
   return {

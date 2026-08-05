@@ -224,6 +224,13 @@ export class TooltimeStore {
     }
   }
 
+  private enqueue(operation: () => Promise<void>): Promise<void> {
+    this.pending = this.pending.then(operation).catch((error: unknown) => {
+      this.lastError = error instanceof Error ? error : new Error(String(error));
+    });
+    return this.pending;
+  }
+
   private async appendLine(line: string): Promise<number> {
     const { handle } = await openRegularFile(
       this.filePath,
@@ -299,7 +306,7 @@ export class TooltimeStore {
       return;
     }
 
-    this.pending = this.pending.then(async () => {
+    void this.enqueue(async () => {
       await this.ensureStorageDirectory();
       const size = await this.appendLine(line);
       if (this.activeTraceCount === undefined) {
@@ -309,8 +316,6 @@ export class TooltimeStore {
         this.activeTraceCount++;
       }
       if (this.activeTraceCount > this.maxTasks || size > MAX_ACTIVE_FILE_BYTES) await this.compactActiveFile();
-    }).catch((error: unknown) => {
-      this.lastError = error instanceof Error ? error : new Error(String(error));
     });
   }
 
@@ -323,16 +328,15 @@ export class TooltimeStore {
   }
 
   async load(): Promise<TaskTrace[]> {
-    await this.flush();
-    const cutoff = this.now() - this.retentionDays * 24 * 60 * 60 * 1_000;
-    try {
+    let compacted = false;
+    await this.enqueue(async () => {
       await this.ensureStorageDirectory();
       await this.compactActiveFile(true);
-    } catch (error) {
-      this.lastError = error instanceof Error ? error : new Error(String(error));
-      return [];
-    }
+      compacted = true;
+    });
+    if (!compacted) return [];
 
+    const cutoff = this.now() - this.retentionDays * 24 * 60 * 60 * 1_000;
     let entries;
     try {
       entries = await readdir(this.projectDir, { withFileTypes: true });

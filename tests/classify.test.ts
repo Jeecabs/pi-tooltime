@@ -111,6 +111,10 @@ test("does not treat search patterns as filesystem scopes", () => {
   assert.equal(classifyToolCall("bash", { command: "rg --files /" }, cwd).scope, "root");
   assert.equal(classifyToolCall("bash", { command: "grep -A 3 '/tmp'" }, cwd).scope, "project");
   assert.equal(classifyToolCall("bash", { command: "rg --context 3 '/tmp'" }, cwd).scope, "project");
+  assert.equal(classifyToolCall("bash", { command: "rg 'foo|bar' /tmp" }, cwd).scope, "outside");
+  assert.equal(classifyToolCall("bash", { command: "grep 'foo&bar' /tmp" }, cwd).scope, "outside");
+  assert.equal(classifyToolCall("bash", { command: "rg foo\\|bar /tmp" }, cwd).scope, "outside");
+  assert.equal(classifyToolCall("bash", { command: "rg 'foo; rg needle /;' src" }, cwd).scope, "project");
 });
 
 test("treats shell output and search side effects as mutations", () => {
@@ -120,6 +124,8 @@ test("treats shell output and search side effects as mutations", () => {
     "find src -delete",
     "rg needle src > results.txt",
     "rg needle src && touch changed",
+    "rg $'foo\\'' src > results.txt",
+    "rg $'foo\\'' src | tee results.txt",
   ]) {
     assert.equal(classifyToolCall("bash", { command }, "/project").mutates, true, command);
   }

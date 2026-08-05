@@ -49,14 +49,138 @@ function isTestCommand(command: string): boolean {
 }
 
 function isSearchCommand(command: string): boolean {
-  return /(?:^|[;&|]\s*)(?:rg|grep|find)\b/iu.test(command.trim());
+  return lexShell(command).commands.some((words) => ["rg", "grep", "find"].includes(words[0]?.toLowerCase() ?? ""));
 }
 
-function shellWords(command: string): string[] {
-  return command.match(/"(?:\\.|[^"\\])*"|'[^']*'|[^\s;&|]+/gu)?.map((word) => {
-    if ((word.startsWith("\"") && word.endsWith("\"")) || (word.startsWith("'") && word.endsWith("'"))) return word.slice(1, -1);
-    return word;
-  }) ?? [];
+interface ShellLexResult {
+  commands: string[][];
+  hasEffect: boolean;
+  malformed: boolean;
+}
+
+type ShellQuote = "single" | "double" | "ansi-single";
+
+interface ShellLexState {
+  commands: string[][];
+  words: string[];
+  word: string;
+  wordStarted: boolean;
+  quote?: ShellQuote;
+  escaped: boolean;
+  hasEffect: boolean;
+}
+
+function finishShellWord(state: ShellLexState): void {
+  if (!state.wordStarted) return;
+  state.words.push(state.word);
+  state.word = "";
+  state.wordStarted = false;
+}
+
+function finishShellCommand(state: ShellLexState): void {
+  finishShellWord(state);
+  if (state.words.length > 0) state.commands.push(state.words);
+  state.words = [];
+}
+
+function appendEscapedShellCharacter(state: ShellLexState, character: string): void {
+  state.word += character;
+  state.wordStarted = true;
+  state.escaped = false;
+}
+
+function consumeSingleQuotedShellCharacter(state: ShellLexState, character: string): void {
+  if (character === "'") state.quote = undefined;
+  else state.word += character;
+}
+
+function consumeAnsiQuotedShellCharacter(state: ShellLexState, character: string): void {
+  if (character === "\\") state.escaped = true;
+  else if (character === "'") state.quote = undefined;
+  else state.word += character;
+}
+
+function consumeDoubleQuotedShellCharacter(
+  state: ShellLexState,
+  character: string,
+  next: string | undefined,
+): void {
+  if (character === "\\") {
+    state.escaped = true;
+    return;
+  }
+  if (character === "\"") state.quote = undefined;
+  else state.word += character;
+  if (character === "`" || (character === "$" && next === "(")) state.hasEffect = true;
+}
+
+function consumeQuotedShellCharacter(
+  state: ShellLexState,
+  character: string,
+  next: string | undefined,
+): void {
+  if (state.quote === "single") consumeSingleQuotedShellCharacter(state, character);
+  else if (state.quote === "ansi-single") consumeAnsiQuotedShellCharacter(state, character);
+  else consumeDoubleQuotedShellCharacter(state, character, next);
+}
+
+function consumeUnquotedShellCharacter(
+  state: ShellLexState,
+  character: string,
+  next: string | undefined,
+): boolean {
+  if (character === "\\") {
+    state.escaped = true;
+    state.wordStarted = true;
+    return false;
+  }
+  if (character === "$" && next === "'") {
+    state.quote = "ansi-single";
+    state.wordStarted = true;
+    return true;
+  }
+  if (character === "'" || character === "\"") {
+    state.quote = character === "'" ? "single" : "double";
+    state.wordStarted = true;
+    return false;
+  }
+  if (character === "\n" || ";&|<>".includes(character)) {
+    state.hasEffect = true;
+    finishShellCommand(state);
+    return false;
+  }
+  if (/\s/u.test(character)) {
+    finishShellWord(state);
+    return false;
+  }
+  if (character === "`" || (character === "$" && next === "(")) state.hasEffect = true;
+  state.word += character;
+  state.wordStarted = true;
+  return false;
+}
+
+function lexShell(command: string): ShellLexResult {
+  const state: ShellLexState = {
+    commands: [],
+    words: [],
+    word: "",
+    wordStarted: false,
+    escaped: false,
+    hasEffect: false,
+  };
+  for (let index = 0; index < command.length; index++) {
+    const character = command[index]!;
+    const next = command[index + 1];
+    if (state.escaped) appendEscapedShellCharacter(state, character);
+    else if (state.quote) consumeQuotedShellCharacter(state, character, next);
+    else if (consumeUnquotedShellCharacter(state, character, next)) index++;
+  }
+  finishShellCommand(state);
+  return {
+    commands: state.commands,
+    hasEffect: state.hasEffect,
+    malformed: state.quote !== undefined || state.escaped,
+  };
 }
 
 const SEARCH_OPTION_VALUES = new Set([
@@ -122,14 +246,19 @@ function searchOperands(tool: string, args: readonly string[]): string[] {
   return tool === "find" ? findOperands(args) : patternSearchOperands(args);
 }
 
+function explicitSearchOperandScope(rawWord: string, cwd: string): ToolScope | undefined {
+  const word = rawWord.replace(/^[<(]+|[>),]+$/gu, "");
+  const explicit = word === ".." || word.startsWith("../") || word === "~" || word.startsWith("~/") || isAbsolute(word);
+  return explicit ? pathScope(word, cwd) : undefined;
+}
+
 function bashSearchScope(command: string, cwd: string): ToolScope {
   let broadest: ToolScope = "project";
-  const invocations = command.trim().matchAll(/(?:^|[;&|]\s*)(rg|grep|find)\b([^;&|]*)/giu);
-  for (const invocation of invocations) {
-    for (const rawWord of searchOperands(invocation[1]!.toLowerCase(), shellWords(invocation[2] ?? ""))) {
-      const word = rawWord.replace(/^[<(]+|[>),]+$/gu, "");
-      if (!(word === ".." || word.startsWith("../") || word === "~" || word.startsWith("~/") || isAbsolute(word))) continue;
-      const scope = pathScope(word, cwd);
+  for (const words of lexShell(command).commands) {
+    const tool = words[0]?.toLowerCase() ?? "";
+    if (!["rg", "grep", "find"].includes(tool)) continue;
+    for (const rawWord of searchOperands(tool, words.slice(1))) {
+      const scope = explicitSearchOperandScope(rawWord, cwd);
       if (scope === "root") return "root";
       if (scope === "outside") broadest = "outside";
     }
@@ -137,45 +266,9 @@ function bashSearchScope(command: string, cwd: string): ToolScope {
   return broadest;
 }
 
-interface ShellScanState {
-  quote?: "single" | "double";
-  escaped: boolean;
-}
-
-function singleQuotedCharacter(state: ShellScanState, character: string): boolean {
-  if (character === "'") state.quote = undefined;
-  return false;
-}
-
-function doubleQuotedCharacter(state: ShellScanState, character: string, next: string | undefined): boolean {
-  if (character === "\"") state.quote = undefined;
-  return character === "`" || (character === "$" && next === "(");
-}
-
-function shellCharacterHasEffect(state: ShellScanState, character: string, next: string | undefined): boolean {
-  if (state.escaped) {
-    state.escaped = false;
-    return false;
-  }
-  if (state.quote === "single") return singleQuotedCharacter(state, character);
-  if (character === "\\") {
-    state.escaped = true;
-    return false;
-  }
-  if (state.quote === "double") return doubleQuotedCharacter(state, character, next);
-  if (character === "'" || character === "\"") {
-    state.quote = character === "'" ? "single" : "double";
-    return false;
-  }
-  return ";&|<>\n`".includes(character) || (character === "$" && next === "(");
-}
-
 function hasShellSideEffects(command: string): boolean {
-  const state: ShellScanState = { escaped: false };
-  for (let index = 0; index < command.length; index++) {
-    if (shellCharacterHasEffect(state, command[index]!, command[index + 1])) return true;
-  }
-  return false;
+  const result = lexShell(command);
+  return result.hasEffect || result.malformed;
 }
 
 function searchMutates(command: string): boolean {

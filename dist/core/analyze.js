@@ -66,7 +66,10 @@ export function analyzeTaskTraces(traces) {
         addTools(toolGroups, trace);
         addFindings(findingGroups, trace);
     }
-    const findings = [...findingGroups.values()].sort((a, b) => b.totalWasteMs - a.totalWasteMs || b.taskCount - a.taskCount || compareText(a.code, b.code));
+    const findings = [...findingGroups.values()].sort((a, b) => b.totalWasteMs - a.totalWasteMs
+        || b.taskCount - a.taskCount
+        || compareText(a.code, b.code)
+        || (a.confidence === b.confidence ? 0 : a.confidence === "high" ? -1 : 1));
     return {
         taskCount: safeTraces.length,
         taskWallMs: safeTraces.reduce((total, trace) => total + trace.taskWallMs, 0),

@@ -32,6 +32,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Ver
 - Moved type checking and declaration builds to the locked TypeScript 7 native compiler (`tsgo`).
 - Aligned Node declarations and Pi peer metadata with the minimum supported runtime lines.
 
+### Fixed
+
+- Serialized active-file compaction with scheduled appends so compaction cannot discard a concurrent trace.
+- Made shell search scope and mutation classification respect quoted, escaped, and ANSI-C-quoted operators.
+- Made equal mixed-confidence finding aggregates order independently of trace input order.
+
 ### Security
 
 - Added explicit stored and remote allowlists that discard extra trace, call, and finding fields.

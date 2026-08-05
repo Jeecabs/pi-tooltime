@@ -22,6 +22,7 @@ export declare class TooltimeStore {
     private activeTraceCount;
     constructor(options: TooltimeStoreOptions);
     private ensureStorageDirectory;
+    private enqueue;
     private appendLine;
     private replaceActiveFile;
     private compactActiveFile;

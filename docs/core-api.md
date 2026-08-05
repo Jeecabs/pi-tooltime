@@ -194,7 +194,7 @@ Finding `taskCount` counts trace instances with that finding. It does not depend
 Ordering is deterministic:
 
 - Tool summaries: call duration descending, call count descending, then identifier by code-point order.
-- Findings: suspected duration descending, task count descending, then code by code-point order.
+- Findings: suspected duration descending, task count descending, code by code-point order, then high confidence before medium confidence.
 - Modes: code-point order.
 
 The returned analysis and nested values are deeply frozen.

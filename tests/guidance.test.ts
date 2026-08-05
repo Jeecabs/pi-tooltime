@@ -71,6 +71,15 @@ test("does not let medium-confidence evidence promote a high-confidence finding"
   }
 });
 
+test("orders equal mixed-confidence aggregates independently of trace order", () => {
+  for (const traces of [
+    [trace("1", routeFinding(11_000, "high")), trace("2", routeFinding(11_000, "medium"))],
+    [trace("1", routeFinding(11_000, "medium")), trace("2", routeFinding(11_000, "high"))],
+  ]) {
+    assert.deepEqual(analyzeTaskTraces(traces).findings.map((finding) => finding.confidence), ["high", "medium"]);
+  }
+});
+
 test("uses observed guidance before baseline guidance without duplicate IDs", () => {
   const traces = [trace("1", routeFinding(11_000)), trace("2", routeFinding(11_000)), trace("3", routeFinding(11_000))];
   const prompt = buildGuidancePrompt(traces, options);

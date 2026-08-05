@@ -188,6 +188,12 @@ export class TooltimeStore {
             await chmod(path, STORAGE_MODE);
         }
     }
+    enqueue(operation) {
+        this.pending = this.pending.then(operation).catch((error) => {
+            this.lastError = error instanceof Error ? error : new Error(String(error));
+        });
+        return this.pending;
+    }
     async appendLine(line) {
         const { handle } = await openRegularFile(this.filePath, constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT, TRACE_MODE);
         try {
@@ -259,7 +265,7 @@ export class TooltimeStore {
             this.lastError = new Error("Tooltime trace exceeds the local size limit.");
             return;
         }
-        this.pending = this.pending.then(async () => {
+        void this.enqueue(async () => {
             await this.ensureStorageDirectory();
             const size = await this.appendLine(line);
             if (this.activeTraceCount === undefined) {
@@ -271,8 +277,6 @@ export class TooltimeStore {
             }
             if (this.activeTraceCount > this.maxTasks || size > MAX_ACTIVE_FILE_BYTES)
                 await this.compactActiveFile();
-        }).catch((error) => {
-            this.lastError = error instanceof Error ? error : new Error(String(error));
         });
     }
     async flush() {
@@ -282,16 +286,15 @@ export class TooltimeStore {
         return this.lastError;
     }
     async load() {
-        await this.flush();
-        const cutoff = this.now() - this.retentionDays * 24 * 60 * 60 * 1_000;
-        try {
+        let compacted = false;
+        await this.enqueue(async () => {
             await this.ensureStorageDirectory();
             await this.compactActiveFile(true);
-        }
-        catch (error) {
-            this.lastError = error instanceof Error ? error : new Error(String(error));
+            compacted = true;
+        });
+        if (!compacted)
             return [];
-        }
+        const cutoff = this.now() - this.retentionDays * 24 * 60 * 60 * 1_000;
         let entries;
         try {
             entries = await readdir(this.projectDir, { withFileTypes: true });
