@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pi Tooltime: Tool-Time Analytics for Pi Agents</title>
+<meta name="description" content="Pi Tooltime is a Pi extension for local tool-time analytics and optional prompt coaching. It measures tool occupancy per task and detects patterns that might indicate avoidable work.">
+<meta name="color-scheme" content="light dark">
+<link rel="canonical" href="https://jeecabs.github.io/pi-tooltime/">
+<meta property="og:title" content="Pi Tooltime: Tool-Time Analytics for Pi Agents">
+<meta property="og:description" content="A Pi extension that measures how much of each task is spent in tools, and flags patterns that look like avoidable work. Local by default.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jeecabs.github.io/pi-tooltime/">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%8F%B1%3C/text%3E%3C/svg%3E">
+<script>
+document.documentElement.dataset.theme =
+  localStorage.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-outer:#F0EEEE; --bg:#FAFAF9; --bg-raise:#FFFFFF; --bg-sunk:#F0EEEE;
+  --fg:#292623; --fg-2:#595654; --fg-3:#737373;
+  --tag:#008566; --tag-wash:#ECFDF5;
+  --link:#C24C0A;
+  --border:#DEDBD8; --border-strong:#C8C4C1;
+  --term-bg:#141414; --term-fg:#DEDBD8; --term-green:#00BC7D; --term-amber:#FEBC3C;
+  --term-dim:#8E8985; --term-border:#383838;
+  color-scheme:light;
+}
+[data-theme="dark"]{
+  --bg-outer:#0F0F0F; --bg:#141414; --bg-raise:#1B1B1B; --bg-sunk:#111111;
+  --fg:#F5F5F5; --fg-2:#A3A3A3; --fg-3:#8C8C8C;
+  --tag:#00BC7D; --tag-wash:#113C2F;
+  --link:#FEBC3C;
+  --border:#2A2A2A; --border-strong:#383838;
+  color-scheme:dark;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+section{scroll-margin-top:72px}
+body{
+  background:var(--bg-outer); color:var(--fg);
+  font-family:"Instrument Sans",system-ui,sans-serif;
+  font-size:15px; line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--tag); color:var(--bg)}
+a{color:inherit; text-decoration:none}
+.frame{max-width:1160px; margin:0 auto; background:var(--bg); border-left:1px solid var(--border); border-right:1px solid var(--border); min-height:100vh}
+.wrap{padding:0 48px}
+@media (max-width:720px){.wrap{padding:0 20px}}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  .reveal{animation:none !important; opacity:1 !important; transform:none !important}
+}
+
+/* ---- nav ---- */
+nav{position:sticky; top:0; z-index:10; background:var(--bg); border-bottom:1px solid var(--border)}
+nav .wrap{display:flex; align-items:center; gap:22px; height:56px}
+.logo{font-family:"Instrument Serif",serif; font-size:21px; letter-spacing:.01em; white-space:nowrap}
+nav .links{
+  display:flex; gap:22px; margin-left:auto; font-size:13.5px; font-weight:500;
+  overflow-x:auto; scrollbar-width:none; white-space:nowrap;
+}
+nav .links::-webkit-scrollbar{display:none}
+nav .links a{color:var(--fg-2)}
+nav .links a:hover, nav .links a.active{color:var(--fg)}
+#theme-btn{
+  background:var(--bg-raise); border:1px solid var(--border); border-radius:6px;
+  color:var(--fg-2); font-family:"JetBrains Mono",monospace; font-size:10.5px;
+  letter-spacing:.08em; padding:5px 11px; cursor:pointer; white-space:nowrap;
+}
+#theme-btn:hover{color:var(--fg); border-color:var(--border-strong)}
+
+/* ---- chips ---- */
+.tag{
+  display:inline-block; vertical-align:middle; line-height:1.5;
+  font-family:"JetBrains Mono",monospace; font-size:10px; font-weight:500;
+  letter-spacing:.02em; color:var(--tag);
+  border:1px solid var(--tag); border-radius:4px; padding:1px 7px; white-space:nowrap;
+}
+.tag.amber{color:var(--link); border-color:var(--link)}
+.tag.dim{color:var(--fg-3); border-color:var(--border-strong)}
+
+/* ---- status strip ---- */
+.ticker{border-bottom:1px solid var(--border)}
+.ticker .wrap{display:flex; align-items:center; gap:14px; height:42px; white-space:nowrap}
+.ticker .date{font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--fg-3)}
+@media (max-width:640px){.ticker .date{display:none}}
+.ticker .item{font-size:13px; color:var(--fg-2); min-width:0; overflow:hidden; text-overflow:ellipsis}
+.ticker .more{margin-left:auto}
+.link{color:var(--link); font-family:"JetBrains Mono",monospace; font-size:11px; letter-spacing:.08em}
+.link:hover{text-decoration:underline}
+
+/* ---- hero ---- */
+header .wrap{padding-top:64px; padding-bottom:60px}
+h1{
+  font-family:"Instrument Serif",serif; font-weight:400;
+  font-size:clamp(32px,4.5vw,46px); line-height:1.12; letter-spacing:.005em;
+  margin-bottom:18px;
+}
+.lede{color:var(--fg-2); max-width:64ch; margin-bottom:30px}
+.install{
+  display:inline-flex; align-items:center; gap:16px; flex-wrap:wrap;
+  background:var(--term-bg); color:var(--term-fg);
+  border:1px solid var(--term-border); border-radius:6px;
+  padding:13px 17px; font-family:"JetBrains Mono",monospace; font-size:12.5px; max-width:100%;
+}
+.install .p{color:var(--term-green); user-select:none}
+.install .cmd{overflow-wrap:anywhere}
+.install button{
+  background:none; border:1px solid var(--term-border); border-radius:4px; color:var(--term-dim);
+  font:inherit; font-size:10.5px; padding:3px 10px; cursor:pointer; letter-spacing:.06em;
+}
+.install button:hover{color:var(--term-green); border-color:var(--term-green)}
+.req{
+  margin-top:14px; font-family:"JetBrains Mono",monospace; font-size:11px;
+  letter-spacing:.04em; color:var(--fg-3);
+}
+.cost{margin-top:10px; color:var(--fg-2); max-width:66ch}
+.cost a, p a, li a, td a{color:var(--link)}
+.cost a:hover, p a:hover, li a:hover, td a:hover{text-decoration:underline}
+.note{font-size:13px; color:var(--fg-3); max-width:70ch}
+.facts{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:6px; overflow:hidden; margin-top:40px}
+.fact{background:var(--bg-raise); padding:16px 20px}
+.fact span{display:flex; align-items:center; justify-content:space-between; gap:8px; font-family:"JetBrains Mono",monospace; font-size:10px; letter-spacing:.02em; color:var(--fg-3); margin-bottom:8px}
+.fact b{display:block; font-weight:600; margin-bottom:2px}
+.fact p{font-size:13px; color:var(--fg-2)}
+@media (max-width:760px){.facts{grid-template-columns:1fr}}
+.reveal{opacity:0; transform:translateY(12px); animation:rise .6s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes rise{to{opacity:1; transform:none}}
+
+/* ---- sections ---- */
+section{border-top:1px solid var(--border)}
+section .wrap{padding-top:56px; padding-bottom:60px}
+h2{font-size:20px; font-weight:600; letter-spacing:-.01em}
+.sec-sub{color:var(--fg-2); margin:4px 0 28px; max-width:68ch}
+.sec-foot{margin-top:24px; display:flex; justify-content:flex-end; gap:28px}
+code{
+  font-family:"JetBrains Mono",monospace; font-size:12px;
+  background:var(--bg-sunk); border:1px solid var(--border);
+  border-radius:4px; padding:1px 6px; white-space:nowrap;
+}
+
+/* terminal */
+.term{background:var(--term-bg); color:var(--term-fg); border:1px solid var(--term-border); border-radius:6px}
+.term-bar{display:flex; align-items:center; gap:10px; padding:9px 16px; border-bottom:1px solid #262626; font-family:"JetBrains Mono",monospace; font-size:10px; letter-spacing:.1em}
+.term-bar .t{color:var(--term-green); border:1px solid var(--term-green); border-radius:4px; padding:2px 7px}
+.term-bar .t.amber{color:var(--term-amber); border-color:var(--term-amber)}
+.term-bar .d{color:var(--term-dim)}
+.term pre{padding:16px 20px; font-family:"JetBrains Mono",monospace; font-size:12.5px; line-height:1.7; overflow:auto; max-height:420px}
+.term .g{color:var(--term-green)} .term .d{color:var(--term-dim)} .term .a{color:var(--term-amber)}
+.term pre a{color:var(--term-amber); text-decoration:underline; text-decoration-style:dotted; text-underline-offset:3px}
+
+.steps{list-style:none; counter-reset:s; max-width:620px}
+.steps li{counter-increment:s; display:flex; gap:16px; padding:13px 0; border-bottom:1px solid var(--border); color:var(--fg-2)}
+.steps li:last-child{border-bottom:none}
+.steps li::before{content:counter(s,decimal-leading-zero); font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--fg-3); padding-top:3px}
+.callout{background:var(--bg-raise); border:1px solid var(--border); border-radius:6px; padding:14px 18px; margin-top:20px; font-size:13.5px; color:var(--fg-2)}
+.callout b{color:var(--fg); font-weight:600}
+
+/* tables */
+.table-scroll{overflow-x:auto; border:1px solid var(--border); border-radius:6px; background:var(--bg-raise)}
+table{width:100%; border-collapse:collapse; font-size:13.5px}
+th{
+  text-align:left; font-family:"JetBrains Mono",monospace; font-weight:500; font-size:10px;
+  letter-spacing:.1em; color:var(--fg-3);
+  background:var(--bg-sunk); padding:11px 16px; border-bottom:1px solid var(--border);
+}
+td{padding:12px 16px; border-bottom:1px solid var(--border); vertical-align:top; color:var(--fg-2)}
+tr:last-child td{border-bottom:none}
+td:first-child{color:var(--fg); white-space:nowrap}
+.no{color:var(--fg-3)}
+.tfoot{margin-top:12px; font-size:13px; color:var(--fg-3); max-width:70ch}
+
+/* cards + grids */
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:6px; overflow:hidden}
+.card{background:var(--bg-raise); padding:20px 22px; display:block; transition:background .15s}
+a.card:hover{background:var(--bg-sunk)}
+.card b{font-family:"Instrument Serif",serif; font-weight:400; font-size:17px; display:block; margin-bottom:5px}
+.card p{font-size:13px; color:var(--fg-2)}
+.card .go{display:block; margin-top:12px}
+.group-label{font-family:"JetBrains Mono",monospace; font-size:10px; letter-spacing:.12em; color:var(--fg-3); margin:26px 0 10px}
+.group-label:first-of-type{margin-top:0}
+
+.two-col{display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:start}
+@media (max-width:860px){.two-col{grid-template-columns:1fr}}
+.def{background:var(--bg-raise); border:1px solid var(--border); border-radius:6px; padding:16px 20px; margin-bottom:14px}
+.def p{color:var(--fg-2); font-size:13.5px; margin-top:8px}
+.rule{background:var(--bg-raise); border:1px solid var(--border); border-radius:6px; padding:16px 20px; margin-top:18px; font-size:13.5px; color:var(--fg-2)}
+.rule b{color:var(--fg); font-weight:600}
+
+/* privacy boundaries */
+.bounds{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border); border:1px solid var(--border); border-radius:6px; overflow:hidden}
+@media (max-width:760px){.bounds{grid-template-columns:1fr}}
+.bound{background:var(--bg-raise); padding:20px 22px}
+.bound span{display:flex; align-items:center; justify-content:space-between; gap:8px; font-family:"JetBrains Mono",monospace; font-size:10px; letter-spacing:.02em; color:var(--fg-3); margin-bottom:8px}
+.bound p{font-size:13.5px; color:var(--fg-2)}
+
+/* footer */
+footer{border-top:1px solid var(--border)}
+footer .wrap{padding-top:36px; padding-bottom:44px; display:flex; flex-wrap:wrap; gap:24px; align-items:center; justify-content:space-between}
+footer .fine{font-size:13px; color:var(--fg-3); max-width:54ch}
+footer .fine .tag{margin-right:8px}
+footer .links{display:flex; gap:20px; font-size:13px; font-weight:500}
+footer .links a{color:var(--fg-2)}
+footer .links a:hover{color:var(--fg)}
+</style>
+</head>
+<body>
+<div class="frame">
+
+<nav>
+  <div class="wrap">
+    <a class="logo" href="#">Pi Tooltime</a>
+    <div class="links">
+      <a href="#first-report">First report</a>
+      <a href="#reading">Reading it</a>
+      <a href="#modes">Modes</a>
+      <a href="#commands">Commands</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#core">Core</a>
+      <a href="#docs">Docs</a>
+      <a href="https://github.com/Jeecabs/pi-tooltime">GitHub ↗</a>
+    </div>
+    <button id="theme-btn" title="Switch theme">Dark</button>
+  </div>
+</nav>
+
+<div class="ticker">
+  <div class="wrap">
+    <span class="date">08/05/2026</span>
+    <span class="tag amber">RC</span>
+    <span class="item"><span class="ver">v1.0.0-rc.1</span> is pinned for install. The interface can change before 1.0.0, so pin the exact tag.</span>
+    <a class="link more" href="https://github.com/Jeecabs/pi-tooltime/blob/main/CHANGELOG.md">Changelog ↗</a>
+  </div>
+</div>
+
+<header>
+  <div class="wrap">
+    <h1 class="reveal">Tool-Time Analytics for Pi Agents</h1>
+    <p class="lede reveal" style="animation-delay:.12s">
+      A Pi extension that measures how much of each task is spent in tools,
+      and flags patterns that look like avoidable work.
+    </p>
+    <div class="install reveal" style="animation-delay:.18s">
+      <span class="p">$</span>
+      <span class="cmd">pi install git:github.com/Jeecabs/pi-tooltime@<span class="ver">v1.0.0-rc.1</span></span>
+      <button onclick="copyCmd(this)" aria-live="polite">Copy</button>
+    </div>
+    <p class="req reveal" style="animation-delay:.22s">Pi 0.83.0+, Node.js 22.19.0+, installed from Git, not npm</p>
+    <p class="cost reveal" style="animation-delay:.26s">
+      Extensions run with your full user permissions. Tooltime inspects prompts, tool inputs,
+      and results in memory, so review the source and ref before installing.
+      <a href="#privacy">What it stores ↓</a>
+    </p>
+    <div class="facts reveal" style="animation-delay:.32s">
+      <div class="fact">
+        <span>Stored on disk</span>
+        <b>Allowlisted fields only</b>
+        <p>No prompts, tool inputs, or results are ever persisted.</p>
+      </div>
+      <div class="fact">
+        <span>Sent off machine <span class="tag dim">Off</span></span>
+        <b>Nothing by default</b>
+        <p>Remote Export is opt-in, and project config can never enable it.</p>
+      </div>
+      <div class="fact">
+        <span>Effect on the agent</span>
+        <b>Measures only</b>
+        <p>Coach mode adds guidance text. It never blocks or rewrites a call.</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="first-report">
+  <div class="wrap">
+    <h2>Get the first report</h2>
+    <p class="sec-sub">Four steps from install to your first session report.</p>
+    <div class="two-col">
+      <div>
+        <ol class="steps">
+          <li>Restart Pi or run <code>/reload</code> after installing, then start Pi in a project.</li>
+          <li>Check the active mode and storage path with <code>/tooltime status</code></li>
+          <li>Submit a normal task and wait for Pi to finish.</li>
+          <li>Show the session report with <code>/tooltime report session</code></li>
+        </ol>
+        <div class="callout">
+          <b>Seeing "No task traces."?</b> A trace is written only after a task completes and
+          settles. Analytics mode is on by default; confirm with <code>/tooltime status</code>.
+        </div>
+      </div>
+      <div>
+        <div class="term">
+          <div class="term-bar"><span class="t">Status</span><span class="d">/tooltime status</span></div>
+<pre>Pi Tooltime
+mode: <span class="g">analytics</span>
+configured mode: analytics
+mode source: config or session
+cached traces: 0
+storage: ~/.pi/agent/state/pi-tooltime/...
+config: defaults
+promotion: 3 tasks and 30000ms suspected
+remote: <span class="g">off</span></pre>
+        </div>
+        <div class="term" style="margin-top:14px">
+          <div class="term-bar"><span class="t amber">Sample</span><span class="d">/tooltime report session</span></div>
+<pre>Tooltime report · session
+tasks: 3
+task wall: 4m 18s
+tool wall: <span class="g">2m 6s (49% of task wall)</span>
+tool call sum: 2m 41s
+calls: 18 (1 failed)
+suspected avoidable wall: <span class="g">28s</span>
+
+<span class="d">Top tools:</span>
+- bash: 1m 28s across 6 calls, 1 failed
+- read: 42s across 7 calls
+- grep: 31s across 5 calls
+
+<span class="d">Efficiency findings:</span>
+- <a href="#reading">repeat.expensive-identical</a> (high): 2 tasks, 20s suspected
+- <a href="#reading">search.slow-empty</a> (medium): 1 task, 8.0s suspected</pre>
+        </div>
+        <p class="note" style="margin-top:12px">Illustrative sample. A finding is evidence, not proof that work was avoidable.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="reading">
+  <div class="wrap">
+    <h2>Reading the report</h2>
+    <p class="sec-sub">Parallel tool calls make "total tool time" ambiguous, so every report carries two numbers. Findings are printed as fixed codes.</p>
+    <div class="two-col" style="margin-bottom:28px">
+      <div class="def" style="margin-bottom:0">
+        <code>toolWallMs</code>
+        <p>The union of all Tool Spans. Parallel calls count once. Use it for user-visible tool occupancy.</p>
+      </div>
+      <div class="def" style="margin-bottom:0">
+        <code>toolCallMs</code>
+        <p>The sum of all Tool Spans. Parallel calls can push this past Task Wall Time. Use it to inspect aggregate tool work.</p>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <tr><th>Finding code</th><th>Trigger</th><th>Confidence</th></tr>
+        <tr><td><code>repeat.expensive-identical</code></td><td>A repeated nonmutating fingerprint passes the duration threshold, with no mutation between calls.</td><td>High</td></tr>
+        <tr><td><code>test.full-suite-loop</code></td><td>A later full-suite call repeats the prior suite or follows a mutation.</td><td>High</td></tr>
+        <tr><td><code>search.broad-scope</code></td><td>A search or analysis targets root or outside the project.</td><td>High or medium</td></tr>
+        <tr><td><code>search.slow-empty</code></td><td>A search reaches <code>slowCallMs</code> and returns an empty or error Result Kind.</td><td>Medium</td></tr>
+        <tr><td><code>route.explicit-web-local-search</code></td><td>Repository search before a web source, for explicit web intent.</td><td>High</td></tr>
+        <tr><td><code>route.explicit-database-local-search</code></td><td>Repository search before a database source, for explicit database intent.</td><td>High</td></tr>
+        <tr><td><code>route.explicit-repository-database-query</code></td><td>A database query before a repository source, for explicit repository intent.</td><td>High</td></tr>
+      </table>
+    </div>
+    <p class="tfoot">Only high-confidence findings can become observed guidance, after 3 affected tasks and 30 seconds of suspected time by default. The three <code>route.*</code> codes all map to the single <code>source-routing</code> guidance rule. Exact report and API names are defined in <a href="https://github.com/Jeecabs/pi-tooltime/blob/main/docs/terminology.md">Terminology ↗</a></p>
+    <p class="sec-foot"><a class="link" href="https://github.com/Jeecabs/pi-tooltime/blob/main/docs/architecture.md">Full detection model ↗</a></p>
+  </div>
+</section>
+
+<section id="modes">
+  <div class="wrap">
+    <h2>Modes</h2>
+    <p class="sec-sub">Analytics is the default. Coach is the opt-in. Off pauses capture and keeps your existing data.</p>
+    <div class="table-scroll">
+      <table>
+        <tr><th>Mode</th><th>Records traces</th><th>Changes system prompt</th><th>Use when</th></tr>
+        <tr>
+          <td><code>off</code></td><td class="no">No</td><td class="no">No</td>
+          <td>Pausing capture. Existing traces are kept until they expire or you delete them.</td>
+        </tr>
+        <tr>
+          <td><code>analytics</code> <span class="tag">Default</span></td><td>Yes</td><td class="no">No</td>
+          <td>Measuring without touching the prompt.</td>
+        </tr>
+        <tr>
+          <td><code>coach</code> <span class="tag dim">Opt-in</span></td><td>Yes</td><td><span class="tag amber">Yes</span></td>
+          <td>After findings repeat. Appends at most the configured number of fixed rules, never blocks a call.</td>
+        </tr>
+      </table>
+    </div>
+    <div class="rule">
+      <b>Precedence.</b> Built-in defaults, then user-global config, then trusted project config,
+      then environment variables. <code>/tooltime mode</code> saves a session mode that replaces the
+      configured fallback and applies from the next task. A valid <code>PI_TOOLTIME_MODE</code> is
+      authoritative; the command cannot override it. Invalid values warn instead of failing the
+      agent, and <code>/tooltime status</code> shows the active sources and latest warning.
+    </div>
+    <p class="sec-foot"><a class="link" href="https://github.com/Jeecabs/pi-tooltime/blob/main/docs/configuration.md">Every key and range ↗</a></p>
+  </div>
+</section>
+
+<section id="commands">
+  <div class="wrap">
+    <h2>Commands</h2>
+    <div class="table-scroll">
+      <table>
+        <tr><th>Command</th><th>Result</th><th>Kind</th></tr>
+        <tr><td><code>/tooltime</code> or <code>/tooltime status</code></td><td>Show mode, config sources, storage, promotion thresholds, and Remote Export status.</td><td class="no">notification</td></tr>
+        <tr><td><code>/tooltime mode off|analytics|coach</code></td><td>Select the mode for the current session.</td><td class="no">notification</td></tr>
+        <tr><td><code>/tooltime report [session|project|Nd]</code></td><td>Show measured totals. The default scope is <code>project</code>.</td><td class="no">notification</td></tr>
+        <tr><td><code>/tooltime analyze [session|project|Nd]</code></td><td>Send a model-safe aggregate report to the current model as a user message. Pi can persist it, and the provider sees it.</td><td><span class="tag amber">Model-visible</span></td></tr>
+        <tr><td><code>/tooltime findings</code></td><td>Show finding candidates and active observed guidance.</td><td class="no">notification</td></tr>
+        <tr><td><code>/tooltime prompt</code></td><td>Preview the current coach prompt.</td><td class="no">notification</td></tr>
+        <tr><td><code>/tooltime reload</code></td><td>Reload Tooltime config and local traces after a JSON edit.</td><td class="no">lifecycle</td></tr>
+      </table>
+    </div>
+    <p class="tfoot"><code>Nd</code> selects the last N days, such as <code>7d</code>, from 1 to 3,650. Environment changes need a Pi restart; use <code>/reload</code> after installing or updating the extension.</p>
+  </div>
+</section>
+
+<section id="privacy">
+  <div class="wrap">
+    <h2>Privacy: four boundaries</h2>
+    <p class="sec-sub">Everything Tooltime touches falls into one of four boundaries, each with its own rules.</p>
+    <div class="bounds">
+      <div class="bound">
+        <span>In memory</span>
+        <p>Prompt text, tool names and inputs, up to 4,096 characters of result text, the stop
+        reason, and the working directory are inspected in process memory to classify calls.
+        They are never persisted.</p>
+      </div>
+      <div class="bound">
+        <span>On disk <span class="tag">On</span></span>
+        <p>Allowlisted Task Trace fields only: local IDs, timestamps, fixed classifications,
+        timing, and findings. JSONL under <code>&lt;agent-dir&gt;/state/pi-tooltime/</code> with
+        <code>0700</code> directories, <code>0600</code> files, and a 30-day default retention.</p>
+      </div>
+      <div class="bound">
+        <span>Off the machine <span class="tag dim">Off</span></span>
+        <p>Nothing by default. Remote Export is opt-in, project config can never enable it,
+        and Remote Traces omit fingerprints and all raw content.</p>
+      </div>
+      <div class="bound">
+        <span>To the model <span class="tag dim">On demand</span></span>
+        <p>Coach mode adds fixed rule text only. <code>/tooltime analyze</code> sends an aggregate
+        report as a user message that Pi can persist and the model provider sees.</p>
+      </div>
+    </div>
+    <div class="rule">
+      <b>Remove it.</b> <code>pi remove git:github.com/Jeecabs/pi-tooltime@v1.0.0-rc.1</code>
+      (add <code>-l</code> for a project-local install). Remove does not delete analytics or
+      config; the <a href="https://github.com/Jeecabs/pi-tooltime#uninstall-and-delete-data">README</a>
+      has the full deletion steps.
+    </div>
+    <p class="sec-foot"><a class="link" href="https://github.com/Jeecabs/pi-tooltime/blob/main/docs/data-and-privacy.md">Field by field ↗</a><a class="link" href="https://github.com/Jeecabs/pi-tooltime/blob/main/docs/remote-export.md">Remote contract ↗</a></p>
+  </div>
+</section>
+
+<section id="core">
+  <div class="wrap">
+    <h2>Use the core in evals</h2>
+    <p class="sec-sub">The package root is a Pi-independent Node.js core for eval harnesses. It registers no extension, writes no files, and makes no network requests.</p>
+    <div class="two-col">
+      <div>
+        <div class="table-scroll">
+          <table>
+            <tr><th>Export</th><th>Target</th></tr>
+            <tr><td><code>pi-tooltime</code></td><td>Pi-independent Core v1 interface</td></tr>
+            <tr><td><code>pi-tooltime/extension</code></td><td>Pi extension default export</td></tr>
+          </table>
+        </div>
+        <p class="tfoot">Node.js 22.19.0+, ESM only, installed as a pinned Git dependency.
+        The interface can change before the stable 1.0.0 release.</p>
+      </div>
+      <div class="term">
+        <div class="term-bar"><span class="t">Core</span><span class="d">record one task</span></div>
+<pre>import { analyzeTraces, createTaskRecorder,
+  formatAnalysis } from "pi-tooltime";
+
+const task = createTaskRecorder({
+  sessionId: "eval-run-42",
+  taskId: "case-7",
+  cwd: process.cwd(),
+  prompt: "Inspect the repository",
+});
+
+task.record({ type: "start", callId: "call-1",
+  toolName: "read", input: { path: "src/index.ts" } });
+task.record({ type: "finish", callId: "call-1",
+  result: "file text", isError: false });
+
+const analysis = analyzeTraces([task.finish("completed")]);
+console.log(formatAnalysis(analysis,
+  { audience: "human", title: "Eval run 42" }));</pre>
+      </div>
+    </div>
+    <p class="sec-foot"><a class="link" href="https://github.com/Jeecabs/pi-tooltime/blob/main/docs/core-api.md">Full Core API ↗</a></p>
+  </div>
+</section>
+
+<section id="docs">
+  <div class="wrap">
+    <h2>Documentation</h2>
+    <p class="sec-sub">Global config lives at <code>&lt;agent-dir&gt;/tooltime.json</code>, and a trusted project can add <code>.pi/tooltime.json</code>.</p>
+    <p class="group-label">Use it</p>
+    <div class="grid">
+      <a class="card" href="https://github.com/Jeecabs/pi-tooltime/blob/main/docs/configuration.md"><b>Configuration</b><p>Every key, range, environment variable, and precedence rule.</p><span class="go link">Read ↗</span></a>
+      <a class="card" href="https://github.com/Jeecabs/pi-tooltime/blob/main/docs/terminology.md"><b>Terminology</b><p>Exact report and API names used across docs and output.</p><span class="go link">Read ↗</span></a>
+    </div>
+    <p class="group-label">Trust it</p>
+    <div class="grid">
+      <a class="card" href="https://github.com/Jeecabs/pi-tooltime/blob/main/docs/data-and-privacy.md"><b>Data and privacy</b><p>Transient, local, remote, and model-visible data, field by field.</p><span class="go link">Read ↗</span></a>
+      <a class="card" href="https://github.com/Jeecabs/pi-tooltime/blob/main/docs/remote-export.md"><b>Remote Export</b><p>The HTTP contract and receiver duties for the opt-in export.</p><span class="go link">Read ↗</span></a>
+      <a class="card" href="https://github.com/Jeecabs/pi-tooltime/blob/main/SECURITY.md"><b>Security policy</b><p>Supported versions and how to report a vulnerability.</p><span class="go link">Read ↗</span></a>
+    </div>
+    <p class="group-label">Build on it</p>
+    <div class="grid">
+      <a class="card" href="https://github.com/Jeecabs/pi-tooltime/blob/main/docs/core-api.md"><b>Core API</b><p>The curated v1-candidate interface, lifecycle contract, and stability policy.</p><span class="go link">Read ↗</span></a>
+      <a class="card" href="https://github.com/Jeecabs/pi-tooltime/blob/main/docs/architecture.md"><b>Architecture</b><p>Event ordering, trace boundaries, promotion, and eval use.</p><span class="go link">Read ↗</span></a>
+      <a class="card" href="https://github.com/Jeecabs/pi-tooltime/blob/main/CONTRIBUTING.md"><b>Contributing</b><p>Development workflow, verification, and project policy.</p><span class="go link">Read ↗</span></a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p class="fine">
+      <span class="ver">v1.0.0-rc.1</span><br>
+      Pi Tooltime inspects task prompts, tool inputs, and tool results in memory, and persists
+      only allowlisted analytics fields.
+    </p>
+    <div class="links">
+      <a href="https://github.com/Jeecabs/pi-tooltime">GitHub</a>
+      <a href="https://github.com/Jeecabs/pi-tooltime/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/Jeecabs/pi-tooltime/blob/main/SUPPORT.md">Support</a>
+      <a href="https://github.com/Jeecabs/pi-tooltime/issues">Issues</a>
+    </div>
+  </div>
+</footer>
+
+</div>
+<script>
+const VERSION = "1.0.0-rc.1";
+document.querySelectorAll(".ver").forEach((el) => { el.textContent = "v" + VERSION; });
+
+const root = document.documentElement, btn = document.getElementById("theme-btn");
+function setTheme(t){ root.dataset.theme = t; btn.textContent = t === "dark" ? "Light" : "Dark"; localStorage.theme = t; }
+setTheme(root.dataset.theme);
+btn.onclick = () => setTheme(root.dataset.theme === "dark" ? "light" : "dark");
+
+function copyCmd(b){
+  const cmd = b.parentElement.querySelector(".cmd").textContent.trim();
+  navigator.clipboard.writeText(cmd).then(
+    () => { b.textContent = "Copied"; setTimeout(() => { b.textContent = "Copy"; }, 1500); },
+    () => { b.textContent = "Failed"; setTimeout(() => { b.textContent = "Copy"; }, 1500); }
+  );
+}
+
+const navLinks = [...document.querySelectorAll("nav .links a[href^='#']")];
+const byId = Object.fromEntries(navLinks.map((a) => [a.getAttribute("href").slice(1), a]));
+const spy = new IntersectionObserver((entries) => {
+  entries.forEach((e) => {
+    if (e.isIntersecting) {
+      navLinks.forEach((a) => a.classList.remove("active"));
+      byId[e.target.id]?.classList.add("active");
+    }
+  });
+}, { rootMargin: "-20% 0px -70% 0px" });
+document.querySelectorAll("section[id]").forEach((s) => spy.observe(s));
+</script>
+</body>
+</html>
