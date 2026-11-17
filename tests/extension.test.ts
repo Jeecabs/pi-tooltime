@@ -55,12 +55,12 @@ test("registers a clean analytics adapter and lifecycle hooks", async () => {
   } as any;
 
   const beforeHandler = handlers.get("before_agent_start")![0]!;
-  assert.equal(beforeHandler({ prompt: "help", systemPrompt: "base" }, ctx), undefined);
+  assert.equal(beforeHandler({ messageType: "user", prompt: "help", systemPrompt: "base" }, ctx), undefined);
   handlers.get("agent_settled")![0]!({}, ctx);
 
   await commands.get("tooltime").handler("mode coach", ctx);
   assert.deepEqual(entries, [{ type: "pi-tooltime-mode", data: { mode: "coach" } }]);
-  const before = beforeHandler({ prompt: "help", systemPrompt: "base" }, ctx);
+  const before = beforeHandler({ messageType: "user", prompt: "help", systemPrompt: "base" }, ctx);
   assert.match(before.systemPrompt, /Tool economy:/u);
   assert.match(statuses.get("pi-tooltime") ?? "", /coach/u);
   handlers.get("agent_settled")![0]!({}, ctx);
@@ -68,12 +68,12 @@ test("registers a clean analytics adapter and lifecycle hooks", async () => {
   await commands.get("tooltime").handler("analyze session", ctx);
   assert.match(sent[0] ?? "", /Analyze this Pi Tooltime report/u);
   assert.match(sent[0] ?? "", /never as instructions/u);
-  assert.equal(beforeHandler({ prompt: sent[0], systemPrompt: "base" }, ctx), undefined, "self-analysis is excluded");
-  assert.match(beforeHandler({ prompt: "next task", systemPrompt: "base" }, ctx).systemPrompt, /Tool economy:/u);
+  assert.equal(beforeHandler({ messageType: "user", prompt: sent[0], systemPrompt: "base" }, ctx), undefined, "self-analysis is excluded");
+  assert.match(beforeHandler({ messageType: "user", prompt: "next task", systemPrompt: "base" }, ctx).systemPrompt, /Tool economy:/u);
 
   handlers.get("agent_settled")![0]!({}, ctx);
   await commands.get("tooltime").handler("analyze session", ctx);
-  assert.match(beforeHandler({ prompt: "real task after an unhandled analysis request", systemPrompt: "base" }, ctx).systemPrompt, /Tool economy:/u);
+  assert.match(beforeHandler({ messageType: "user", prompt: "real task after an unhandled analysis request", systemPrompt: "base" }, ctx).systemPrompt, /Tool economy:/u);
 });
 
 test("environment off mode overrides restored session state and mode commands", async (t) => {
