@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Ver
 
 ## [Unreleased]
 
+### Changed
+
+- Raised the Pi peer floor to 1.2.0. Coaching only applies to user prompts, which relies on the `messageType` field of `before_agent_start`.
+
+### Fixed
+
+- Tasks cancelled with Escape now record an `aborted` outcome from `agent_settled`, even when no assistant message carried an aborted stop reason.
+
 ## [1.0.0] - 2026-08-05
 
 ### Added

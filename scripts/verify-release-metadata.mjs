@@ -23,7 +23,7 @@ assert.equal(packageJson.private, true, "GitHub-only releases must keep private:
 assert.equal(packageJson.type, "module", "package must remain ESM");
 assert.equal(packageJson.packageManager, "pnpm@10.28.2", "package manager must match the release toolchain");
 assert.equal(packageJson.engines?.node, ">=22.19.0", "Node engine must match the supported runtime");
-assert.equal(packageJson.peerDependencies?.["@earendil-works/pi-coding-agent"], ">=0.83.0", "Pi peer range must match the supported runtime");
+assert.equal(packageJson.peerDependencies?.["@earendil-works/pi-coding-agent"], ">=1.2.0", "Pi peer range must match the supported runtime");
 assert.equal(packageJson.author, "Lachlan Jacobs <lachlan.jacobs@protonmail.com>", "package author must use the approved identity");
 assert.equal(packageJson.repository?.url, "git+https://github.com/Jeecabs/pi-tooltime.git", "repository URL must target the canonical repository");
 assert.equal(packageJson.bugs?.url, "https://github.com/Jeecabs/pi-tooltime/issues", "bugs URL must target the canonical repository");
@@ -48,7 +48,7 @@ assertLine("docs/core-api.md", `- \`pi-tooltime@${major}.x\` means Core interfac
 assertLine("docs/remote-export.md", `User-Agent: pi-tooltime/${version}`);
 assertLine("docs/releasing.md", `export TAG=${tag}`);
 
-const changelogRelease = read("CHANGELOG.md").match(/^## \[Unreleased\]\s+## \[([^\]]+)\] - \d{4}-\d{2}-\d{2}$/mu);
+const changelogRelease = read("CHANGELOG.md").match(/^## \[Unreleased\][\s\S]*?^## \[([^\]]+)\] - \d{4}-\d{2}-\d{2}$/mu);
 assert.equal(changelogRelease?.[1], version, "first changelog release must match the package version");
 
 const concreteTag = /v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?/gu;
