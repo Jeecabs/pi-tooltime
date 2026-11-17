@@ -335,6 +335,8 @@ export default function registerTooltime(pi: ExtensionAPI): void {
   });
 
   pi.on("before_agent_start", (event, ctx) => {
+    // Custom-message runs (pi.sendMessage triggerTurn) also fire this; only user prompts are tasks.
+    if (event.messageType !== "user") return undefined;
     finishTask("aborted");
     if (pendingAnalysisPrompt !== undefined) {
       const isAnalysis = event.prompt === pendingAnalysisPrompt;
