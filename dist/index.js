@@ -338,8 +338,9 @@ export default function registerTooltime(pi) {
     pi.on("agent_end", (event) => {
         latestOutcome = taskOutcome(event.messages);
     });
-    pi.on("agent_settled", (_event, ctx) => {
-        finishTask(latestOutcome);
+    pi.on("agent_settled", (event, ctx) => {
+        // An Escape cancel can settle before any assistant message records stopReason "aborted".
+        finishTask(event.aborted ? "aborted" : latestOutcome);
         refreshStatus(ctx);
     });
     pi.on("session_shutdown", async (_event, ctx) => {

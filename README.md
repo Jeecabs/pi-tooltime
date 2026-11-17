@@ -10,7 +10,7 @@ Local analytics are on by default. Coach mode is a separate opt-in. Remote Expor
 
 ## Requirements and security
 
-- Pi 0.83.0 or later.
+- Pi 1.2.0 or later.
 - Node.js 22.19.0 or later.
 - Git access to GitHub. This package is not published to npm.
 
